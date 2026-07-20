@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.content-sop/schemas/handoff-state.schema.json",
+  "title": "Machine-readable project handoff",
+  "type": "object",
+  "required": ["schema_version", "project_id", "updated_at", "current_stage", "last_success", "verified_evidence", "pending_items", "blockers", "next_action", "decisions_required", "last_validation", "metrics", "dashboard", "active_grant_ids"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "project_id": {"type": "string", "minLength": 1},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "current_stage": {"type": "string", "minLength": 1},
+    "last_success": {"type": "string", "minLength": 1},
+    "verified_evidence": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "pending_items": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "blockers": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "next_action": {"type": "string", "minLength": 1},
+    "decisions_required": {"type": "array", "items": {"type": "string", "minLength": 1}},
+    "last_validation": {
+      "type": "object",
+      "required": ["status", "at", "report"],
+      "properties": {
+        "status": {"enum": ["unknown", "pending", "passed", "blocked"]},
+        "at": {"type": ["string", "null"], "format": "date-time"},
+        "report": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["checkpoint", "status", "evidence"],
+      "properties": {
+        "checkpoint": {"type": ["string", "null"]},
+        "status": {"enum": ["not_due", "not_collected", "partial", "complete", "blocked"]},
+        "evidence": {"type": "array", "items": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    },
+    "dashboard": {
+      "type": "object",
+      "required": ["generated_at", "status"],
+      "properties": {
+        "generated_at": {"type": ["string", "null"], "format": "date-time"},
+        "status": {"enum": ["unknown", "current", "stale"]}
+      },
+      "additionalProperties": false
+    },
+    "active_grant_ids": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+  },
+  "additionalProperties": false
+}

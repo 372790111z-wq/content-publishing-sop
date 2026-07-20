@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.content-sop/schemas/content-requirements.schema.json",
+  "title": "Content completeness requirements",
+  "type": "object",
+  "required": ["schema_version", "project_id", "required_story_stages", "story_coverage", "canonical_prompt", "deliverables", "prompt_card_sets", "media"],
+  "properties": {
+    "schema_version": {"const": "1.1"},
+    "project_id": {"type": "string"},
+    "required_story_stages": {"type": "array", "items": {"type": "string"}, "minItems": 9, "uniqueItems": true},
+    "story_coverage": {
+      "type": "array",
+      "minItems": 9,
+      "items": {
+        "type": "object",
+        "required": ["stage", "master_anchors", "decision_event_ids"],
+        "properties": {
+          "stage": {"enum": ["original_need", "new_problem", "attempt", "user_feedback", "decision", "rationale", "implementation_result", "acceptance_evidence", "unresolved"]},
+          "master_anchors": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "decision_event_ids": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+        },
+        "additionalProperties": false
+      }
+    },
+    "canonical_prompt": {
+      "type": "object",
+      "required": ["required", "path", "sha256", "bytes", "characters", "first_line", "last_line", "anchors"],
+      "properties": {
+        "required": {"type": "boolean"},
+        "path": {"type": "string"},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "bytes": {"type": "integer", "minimum": 0},
+        "characters": {"type": "integer", "minimum": 0},
+        "first_line": {"type": "string"},
+        "last_line": {"type": "string"},
+        "anchors": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+      },
+      "additionalProperties": false
+    },
+    "deliverables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "path", "required", "prompt_delivery"],
+        "properties": {
+          "id": {"type": "string"},
+          "kind": {"enum": ["master", "longform", "social", "video_script", "prompt_cards", "other"]},
+          "path": {"type": "string"},
+          "required": {"type": "boolean"},
+          "prompt_delivery": {"enum": ["full_text", "prompt_cards", "accessible_link", "not_required"]},
+          "platform": {"type": ["string", "null"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "prompt_card_sets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "platform", "canonical_prompt_sha256", "total_pages", "first_line", "last_line", "verification_status", "verification_evidence", "pages"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "platform": {"type": "string", "minLength": 1},
+          "canonical_prompt_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+          "total_pages": {"type": "integer", "minimum": 1},
+          "first_line": {"type": "string", "minLength": 1},
+          "last_line": {"type": "string", "minLength": 1},
+          "verification_status": {"enum": ["pending", "verified", "failed"]},
+          "verification_evidence": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "pages": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["page", "image_path", "image_sha256", "sequence"],
+              "properties": {
+                "page": {"type": "integer", "minimum": 1},
+                "image_path": {"type": "string", "minLength": 1},
+                "image_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+                "sequence": {"type": "integer", "minimum": 1}
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "media": {
+      "type": "object",
+      "required": ["images", "videos"],
+      "properties": {
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "required", "role"],
+            "properties": {
+              "path": {"type": "string"},
+              "required": {"type": "boolean"},
+              "role": {"type": "string"},
+              "width": {"type": ["integer", "null"]},
+              "height": {"type": ["integer", "null"]},
+              "sequence": {"type": ["integer", "null"]},
+              "privacy": {"enum": ["unknown", "pending", "verified", "failed", "not_applicable"]}
+            },
+            "additionalProperties": false
+          }
+        },
+        "videos": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "required", "project_verification", "project_evidence", "file_verification", "file_evidence"],
+            "properties": {
+              "path": {"type": "string"},
+              "required": {"type": "boolean"},
+              "project_verification": {"enum": ["unknown", "pending", "verified", "failed", "not_applicable"]},
+              "project_evidence": {"type": "array", "items": {"type": "string", "minLength": 1}},
+              "file_verification": {"enum": ["unknown", "pending", "verified", "failed", "not_applicable"]},
+              "file_evidence": {"type": "array", "items": {"type": "string", "minLength": 1}},
+              "expected_duration_seconds": {"type": ["number", "null"], "minimum": 0},
+              "duration_tolerance_seconds": {"type": "number", "minimum": 0}
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

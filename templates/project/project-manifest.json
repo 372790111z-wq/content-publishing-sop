@@ -1,0 +1,53 @@
+{
+  "schema_version": "1.2",
+  "project_id": "replace-with-project-id",
+  "title": "替换为项目标题",
+  "summary": "一句话说明原始需求和最终交付。",
+  "status": "content_generation",
+  "created_at": "2026-01-01T00:00:00+08:00",
+  "updated_at": "2026-01-01T00:00:00+08:00",
+  "owner": "",
+  "source_work": {
+    "source_type": "completed_requirement",
+    "title": "替换为已经完成并验收的需求名称",
+    "status": "accepted",
+    "accepted_at": "2026-01-01T00:00:00+08:00",
+    "acceptance_evidence": ["decision-log.json#acceptance-event-id"],
+    "reuse_reason": "说明为什么这次已完成需求值得沉淀和复用。",
+    "content_requested_at": "2026-01-02T00:00:00+08:00",
+    "request_evidence": ["decision-log.json#content-request-event-id"]
+  },
+  "files": {
+    "decision_log": "decision-log.json",
+    "content_requirements": "content-requirements.json",
+    "platform_status": "platform-status.json",
+    "metrics": "metrics.json",
+    "checksums": "checksums.json",
+    "master_content": "content/master.md",
+    "handoff": "HANDOFF.md",
+    "handoff_state": "handoff-state.json",
+    "publication_receipts": "publication-receipts.json"
+  },
+  "authorization": {
+    "local_changes": false,
+    "public_publish": false,
+    "delete_or_overwrite": false,
+    "external_sync": false,
+    "note": "布尔值只用于兼容展示，不构成不可逆动作授权；有效授权必须写入 grants。",
+    "grants": []
+  },
+  "release": {
+    "status": "draft",
+    "version": "v0",
+    "frozen_at": null,
+    "release_digest": null,
+    "decision_sequence": null,
+    "invalidated_at": null,
+    "invalidated_reason": null
+  },
+  "last_validation": {
+    "status": "unknown",
+    "at": null,
+    "report": null
+  }
+}

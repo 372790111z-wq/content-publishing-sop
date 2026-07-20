@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.content-sop/schemas/project-registry.schema.json",
+  "title": "Dashboard project registry",
+  "type": "object",
+  "required": ["schema_version", "projects"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "projects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "enabled", "kind"],
+        "properties": {
+          "path": {"type": "string", "minLength": 1},
+          "enabled": {"type": "boolean"},
+          "kind": {"enum": ["project", "example"]}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

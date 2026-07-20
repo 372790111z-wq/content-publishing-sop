@@ -1,0 +1,4 @@
+interface:
+  display_name: "Content Publishing SOP"
+  short_description: "把已验收需求沉淀为完整内容并校验、多平台发布与复盘"
+  default_prompt: "使用 $content-publishing-sop，把这次已完成并验收的需求整理为可发布内容，并按门禁执行。"

@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.content-sop/schemas/project-manifest.schema.json",
+  "title": "Content project manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "project_id", "title", "status", "updated_at", "source_work", "files", "authorization", "release"],
+  "properties": {
+    "schema_version": {"const": "1.2"},
+    "project_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,63}$"},
+    "title": {"type": "string", "minLength": 1},
+    "summary": {"type": "string"},
+    "status": {
+      "enum": ["content_generation", "preflight", "ready_to_publish", "publishing", "published", "paused", "blocked", "archived"]
+    },
+    "created_at": {"type": "string", "format": "date-time"},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "owner": {"type": "string"},
+    "source_work": {
+      "type": "object",
+      "required": ["source_type", "title", "status", "accepted_at", "acceptance_evidence", "reuse_reason", "content_requested_at", "request_evidence"],
+      "properties": {
+        "source_type": {"const": "completed_requirement"},
+        "title": {"type": "string", "minLength": 1},
+        "status": {"const": "accepted"},
+        "accepted_at": {"type": "string", "format": "date-time"},
+        "acceptance_evidence": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "reuse_reason": {"type": "string", "minLength": 1},
+        "content_requested_at": {"type": "string", "format": "date-time"},
+        "request_evidence": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    },
+    "files": {
+      "type": "object",
+      "required": ["decision_log", "content_requirements", "platform_status", "metrics", "checksums", "master_content", "handoff", "handoff_state", "publication_receipts"],
+      "properties": {
+        "decision_log": {"type": "string"},
+        "content_requirements": {"type": "string"},
+        "platform_status": {"type": "string"},
+        "metrics": {"type": "string"},
+        "checksums": {"type": "string"},
+        "master_content": {"type": "string"},
+        "handoff": {"type": "string"},
+        "handoff_state": {"type": "string"},
+        "publication_receipts": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "authorization": {
+      "type": "object",
+      "required": ["local_changes", "public_publish", "delete_or_overwrite", "external_sync", "grants"],
+      "properties": {
+        "local_changes": {"type": "boolean"},
+        "public_publish": {"type": "boolean"},
+        "delete_or_overwrite": {"type": "boolean"},
+        "external_sync": {"type": "boolean"},
+        "note": {"type": "string"},
+        "grants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "action", "approval_kind", "platforms", "release_digest", "granted_at", "expires_at", "status", "consumed_at", "evidence", "receipt_ids"],
+            "properties": {
+              "id": {"type": "string", "minLength": 1},
+              "action": {"enum": ["public_publish", "update_publication", "delete_publication", "external_sync"]},
+              "approval_kind": {"enum": ["content_and_platforms_confirmed", "destructive_action_confirmed", "external_sync_confirmed"]},
+              "platforms": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+              "release_digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+              "granted_at": {"type": "string", "format": "date-time"},
+              "expires_at": {"type": "string", "format": "date-time"},
+              "status": {"enum": ["active", "consumed", "revoked", "expired"]},
+              "consumed_at": {"type": ["string", "null"], "format": "date-time"},
+              "evidence": {"type": "string", "minLength": 1},
+              "receipt_ids": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {"type": "string", "minLength": 1}
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "release": {
+      "type": "object",
+      "required": ["status", "version", "frozen_at", "release_digest", "decision_sequence", "invalidated_at", "invalidated_reason"],
+      "properties": {
+        "status": {"enum": ["draft", "frozen", "invalidated"]},
+        "version": {"type": "string", "minLength": 1},
+        "frozen_at": {"type": ["string", "null"], "format": "date-time"},
+        "release_digest": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "decision_sequence": {"type": ["integer", "null"], "minimum": 1},
+        "invalidated_at": {"type": ["string", "null"], "format": "date-time"},
+        "invalidated_reason": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "last_validation": {
+      "type": "object",
+      "properties": {
+        "status": {"enum": ["unknown", "pending", "verified", "failed"]},
+        "at": {"type": ["string", "null"], "format": "date-time"},
+        "report": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    }
+  }
+}

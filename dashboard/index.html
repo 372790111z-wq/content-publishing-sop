@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>内容发布控制台</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="paper-noise" aria-hidden="true"></div>
+  <header class="masthead">
+    <div class="masthead__kicker">CONTENT OPS / 本地工作台</div>
+    <div class="masthead__main">
+      <div>
+        <h1>内容发布控制台</h1>
+        <p>只记录由已验收需求沉淀出的内容，以及制作、发布、公开验收和效果。</p>
+      </div>
+      <div class="refresh-note">
+        <span class="pulse-dot" aria-hidden="true"></span>
+        <span>数据生成于</span>
+        <strong id="generated-at">—</strong>
+      </div>
+    </div>
+  </header>
+
+  <main class="workspace">
+    <section class="summary-strip" aria-label="项目总览">
+      <article class="summary-card summary-card--ink">
+        <span>内容项目</span>
+        <strong id="summary-projects">0</strong>
+        <small>纳入工作台</small>
+      </article>
+      <article class="summary-card">
+        <span>公开平台</span>
+        <strong id="summary-published">0</strong>
+        <small>状态为 published</small>
+      </article>
+      <article class="summary-card">
+        <span>审核 / 等待</span>
+        <strong id="summary-pending">0</strong>
+        <small>不能写成已公开</small>
+      </article>
+      <article class="summary-card summary-card--warning">
+        <span>失败 / 阻塞</span>
+        <strong id="summary-blocked">0</strong>
+        <small>需要证据或人工处理</small>
+      </article>
+      <article class="summary-card">
+        <span>指标闭环</span>
+        <strong id="summary-metrics">0/0</strong>
+        <small>已发布平台完成采集</small>
+      </article>
+    </section>
+
+    <section class="control-bar" aria-label="筛选项目">
+      <label class="search-box">
+        <span>搜索</span>
+        <input id="search" type="search" placeholder="标题、平台或项目 ID">
+      </label>
+      <label>
+        <span>项目状态</span>
+        <select id="status-filter">
+          <option value="all">全部</option>
+          <option value="paused">已暂停</option>
+          <option value="published">已发布</option>
+          <option value="ready_to_publish">可发布</option>
+          <option value="blocked">阻塞</option>
+        </select>
+      </label>
+      <label class="check-control">
+        <input id="issues-only" type="checkbox">
+        <span>只看有门禁问题的项目</span>
+      </label>
+      <div class="control-bar__hint">
+        更新并检查：<code>python3 tools/build_dashboard.py</code> · <code>python3 tools/build_dashboard.py --check</code>
+      </div>
+    </section>
+
+    <div class="desk-grid">
+      <aside class="project-rail" aria-label="项目列表">
+        <div class="section-label">PROJECT FILES</div>
+        <div id="project-list" class="project-list"></div>
+        <div id="empty-state" class="empty-state" hidden>没有符合条件的项目。</div>
+      </aside>
+
+      <section id="project-detail" class="project-detail" aria-live="polite">
+        <div class="empty-detail">选择一个项目查看详情。</div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    <span>LOCAL-FIRST CONTENT OPERATIONS</span>
+    <span>未知数据保持未知 · 最终内容与平台一次确认后直接发布</span>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
