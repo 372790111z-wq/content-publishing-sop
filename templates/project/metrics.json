@@ -1,0 +1,19 @@
+{
+  "schema_version": "1.1",
+  "project_id": "replace-with-project-id",
+  "collection_plan": {
+    "mode": "hybrid",
+    "timezone": "Asia/Shanghai",
+    "checkpoints": [
+      {
+        "id": "first-review",
+        "due_at": null,
+        "required": true,
+        "note": "根据项目发布时间设置；到期后运行 --require-metrics。"
+      }
+    ],
+    "last_attempt_at": null,
+    "next_due_at": null
+  },
+  "snapshots": []
+}

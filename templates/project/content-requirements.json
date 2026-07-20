@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.1",
+  "project_id": "replace-with-project-id",
+  "required_story_stages": [
+    "original_need",
+    "new_problem",
+    "attempt",
+    "user_feedback",
+    "decision",
+    "rationale",
+    "implementation_result",
+    "acceptance_evidence",
+    "unresolved"
+  ],
+  "story_coverage": [
+    {"stage": "original_need", "master_anchors": ["替换为母稿中的原始需求锚点"], "decision_event_ids": ["event-original-need"]},
+    {"stage": "new_problem", "master_anchors": ["替换为母稿中的新问题锚点"], "decision_event_ids": ["event-new-problem"]},
+    {"stage": "attempt", "master_anchors": ["替换为母稿中的尝试锚点"], "decision_event_ids": ["event-attempt"]},
+    {"stage": "user_feedback", "master_anchors": ["替换为母稿中的用户反馈锚点"], "decision_event_ids": ["event-user-feedback"]},
+    {"stage": "decision", "master_anchors": ["替换为母稿中的最终决定锚点"], "decision_event_ids": ["event-decision"]},
+    {"stage": "rationale", "master_anchors": ["替换为母稿中的决定理由锚点"], "decision_event_ids": ["event-rationale"]},
+    {"stage": "implementation_result", "master_anchors": ["替换为母稿中的实施结果锚点"], "decision_event_ids": ["event-result"]},
+    {"stage": "acceptance_evidence", "master_anchors": ["替换为母稿中的验收证据锚点"], "decision_event_ids": ["event-acceptance"]},
+    {"stage": "unresolved", "master_anchors": ["替换为母稿中的未解决问题锚点"], "decision_event_ids": ["event-unresolved"]}
+  ],
+  "canonical_prompt": {
+    "required": true,
+    "path": "content/canonical-prompt.md",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "bytes": 0,
+    "characters": 0,
+    "first_line": "",
+    "last_line": "",
+    "anchors": ["替换为必须存在的关键句"]
+  },
+  "deliverables": [
+    {
+      "id": "master",
+      "kind": "master",
+      "path": "content/master.md",
+      "required": true,
+      "prompt_delivery": "full_text",
+      "platform": null
+    }
+  ],
+  "prompt_card_sets": [],
+  "media": {
+    "images": [],
+    "videos": []
+  }
+}

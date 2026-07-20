@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.1",
+  "project_id": "replace-with-project-id",
+  "required_stages": [
+    "original_need",
+    "new_problem",
+    "attempt",
+    "user_feedback",
+    "decision",
+    "rationale",
+    "implementation_result",
+    "acceptance_evidence",
+    "unresolved"
+  ],
+  "events": [
+    {
+      "id": "event-001",
+      "sequence": 1,
+      "at": null,
+      "stage": "original_need",
+      "summary": "填写用户最初提出的真实需求。",
+      "details": "",
+      "evidence": ["chat:替换为原始需求证据"],
+      "supersedes": []
+    }
+  ]
+}

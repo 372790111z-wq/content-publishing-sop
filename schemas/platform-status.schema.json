@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.content-sop/schemas/platform-status.schema.json",
+  "title": "Platform publication status",
+  "type": "object",
+  "required": ["schema_version", "project_id", "platforms"],
+  "properties": {
+    "schema_version": {"const": "1.1"},
+    "project_id": {"type": "string"},
+    "platforms": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["platform", "status", "content_path", "public_url", "published_at", "release_digest", "reader_validation", "prompt_delivery", "evidence", "blocker"],
+        "properties": {
+          "platform": {"type": "string"},
+          "status": {"enum": ["not_started", "draft", "ready", "awaiting_authorization", "submitted", "under_review", "published", "failed", "paused", "archived"]},
+          "content_path": {"type": ["string", "null"]},
+          "public_url": {"type": ["string", "null"]},
+          "published_at": {"type": ["string", "null"]},
+          "release_digest": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+          "reader_validation": {"enum": ["unknown", "pending", "verified", "failed", "not_applicable"]},
+          "prompt_delivery": {"enum": ["unknown", "full_text", "prompt_cards", "accessible_link", "not_required"]},
+          "evidence": {"type": "array", "items": {"type": "string", "minLength": 1}},
+          "blocker": {"type": ["string", "null"]}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

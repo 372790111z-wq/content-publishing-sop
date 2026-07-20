@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "project_id": "replace-with-project-id",
+  "updated_at": "2026-01-01T00:00:00+08:00",
+  "current_stage": "content_generation",
+  "last_success": "已创建项目结构",
+  "verified_evidence": [],
+  "pending_items": ["补全需求、内容和证据"],
+  "blockers": [],
+  "next_action": "读取 decision-log.json 并补全真实时间线",
+  "decisions_required": [],
+  "last_validation": {"status": "unknown", "at": null, "report": null},
+  "metrics": {"checkpoint": null, "status": "not_due", "evidence": []},
+  "dashboard": {"generated_at": null, "status": "unknown"},
+  "active_grant_ids": []
+}
