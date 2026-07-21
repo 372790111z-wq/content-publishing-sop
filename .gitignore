@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 reports/*.json
 validation-report.json
+build/
+dist/
+*.egg-info/
+.content-publishing/
 projects/*
 !projects/README.md
 !projects/registry.json

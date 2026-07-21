@@ -18,12 +18,31 @@ from validate import validate  # noqa: E402
 
 
 REQUIRED_PATHS = [
+    "VERSION",
+    "tool-manifest.json",
+    "LICENSE",
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "pyproject.toml",
+    "setup.py",
+    ".github/workflows/ci.yml",
+    ".github/workflows/release.yml",
     "START-HERE.md",
     "USAGE-GUIDE.md",
     "skills/content-publishing-sop/SKILL.md",
     "skills/content-publishing-sop/agents/openai.yaml",
     "skills/content-publishing-sop/scripts/find_workbench.py",
     "tools/install_local_skill.py",
+    "tools/content_publishing.py",
+    "tools/full_schema_check.py",
+    "tools/version_check.py",
+    "content_publishing/cli.py",
+    "content_publishing/mcp_server.py",
+    "content_publishing/transactions.py",
+    "content_publishing/updater.py",
+    "content_publishing/dependencies.py",
+    "content_publishing/platforms.json",
     "AGENT-PROTOCOL.md",
     "SOURCE_OF_TRUTH.md",
     "SOP.md",
@@ -41,6 +60,9 @@ REQUIRED_PATHS = [
     "projects/registry.json",
     "projects/README.md",
     "schemas/project-registry.schema.json",
+    "schemas/SUPPORTED-SUBSET.md",
+    "examples/quickstart-demo/project-manifest.json",
+    "docs/assets/dashboard-demo.png",
 ]
 
 

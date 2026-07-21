@@ -1,0 +1,13 @@
+{
+  "schema_version": "1.0",
+  "platforms": [
+    {"id": "zhihu", "name": "知乎", "official_api": "not_configured", "browser": "adapter_only", "manual": "supported"},
+    {"id": "xiaohongshu", "name": "小红书", "official_api": "not_configured", "browser": "adapter_only", "manual": "supported"},
+    {"id": "jianshu", "name": "简书", "official_api": "not_configured", "browser": "adapter_only", "manual": "supported"},
+    {"id": "renren", "name": "人人", "official_api": "not_configured", "browser": "experimental", "manual": "supported"},
+    {"id": "douyin", "name": "抖音", "official_api": "not_configured", "browser": "adapter_only", "manual": "supported"},
+    {"id": "bilibili", "name": "哔哩哔哩", "official_api": "not_configured", "browser": "adapter_only", "manual": "supported"}
+  ],
+  "execution_order": ["official_api", "browser", "manual"],
+  "note": "adapter_only/experimental 只代表存在接入路径，不代表已完成真实发布测试；只有完成授权和真实测试后才能改为 tested。"
+}

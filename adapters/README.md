@@ -10,7 +10,15 @@ your-project/
 └── 对应 IDE 的薄规则文件
 ```
 
-先把本目录整体复制为项目根下的 `content-publishing-sop/`，再按对应 README 选择是否复制规则入口。写入现有规则文件前必须查重、比较和合并，不得直接覆盖用户规则。
+优先使用统一安装命令：
+
+```bash
+content-publishing --root /path/to/content-publishing-sop install --host <host> --dest /path/to/your-project
+```
+
+Codex 的默认目标是用户 Skill 目录，因此可省略 `--dest`。安装器遇到已有不同规则会阻断；只有由本工具管理且未被用户修改的入口才能使用 `--upgrade`。不使用 CLI 时，再按对应 README 人工复制和合并。
+
+支持 MCP 的 IDE 可以直接连接 `content-publishing mcp serve`，规则入口仍负责要求 Agent 先读取 `START-HERE.md`。
 
 | IDE | 建议入口 | 无法自动加载时 |
 |---|---|---|

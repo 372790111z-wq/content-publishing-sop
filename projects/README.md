@@ -2,9 +2,19 @@
 
 `registry.json` 是看板和跨机器 Agent 发现项目的唯一清单。新项目推荐放在 `projects/<project-id>/`，也可以用相对路径引用工作台旁边的项目。
 
+公共仓库默认只登记完全虚构的 `examples/quickstart-demo`，用于展示最终效果。真实项目应留在本地或受控私有存储，不要提交回公共工具仓库。
+
 只有来源需求已经完成并验收、且用户在验收后明确要求整理内容时，才能新增内容项目。需求开发中、仅完成验收但尚未提出内容请求，或只是 Agent 判断“可能值得写”，都不能提前登记。
 
-新增项目：
+推荐使用事务化命令新增项目：
+
+```bash
+content-publishing new-project <project-id> --help
+```
+
+该命令完成模板复制、project id 替换和注册表更新，但不会编造真实讨论或验收证据。后续仍由 Agent 从事实来源补全内容。
+
+人工新增项目时：
 
 1. 复制 `templates/project/` 为 `projects/<project-id>/`；
 2. 填写 `project-manifest.json.source_work`，绑定验收证据、复用理由和用户内容请求证据；
