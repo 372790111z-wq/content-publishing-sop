@@ -51,9 +51,18 @@ def descendants(start: Path, max_depth: int) -> Iterable[Path]:
 
 def locate(start: Path, max_depth: int) -> Dict[str, object]:
     rows: List[Tuple[int, Path, str]] = []
-    configured = os.environ.get("CONTENT_PUBLISHING_SOP_HOME")
+    configured = os.environ.get("CONTENT_PUBLISHING_HOME") or os.environ.get("CONTENT_PUBLISHING_SOP_HOME")
     if configured:
-        add_candidate(rows, 0, Path(configured), "CONTENT_PUBLISHING_SOP_HOME")
+        add_candidate(rows, 0, Path(configured), "CONTENT_PUBLISHING_HOME")
+
+    managed_marker = Path(__file__).resolve().parent.parent / ".content-publishing-managed.json"
+    if managed_marker.is_file():
+        try:
+            managed = json.loads(managed_marker.read_text(encoding="utf-8"))
+            if managed.get("workbench_root"):
+                add_candidate(rows, 0, Path(managed["workbench_root"]), "managed-installation")
+        except (OSError, json.JSONDecodeError):
+            pass
 
     for directory in ancestors(start):
         add_candidate(rows, 1, directory, "current-or-ancestor")

@@ -99,6 +99,7 @@
       return project.validation && project.validation.status === "blocked";
     }).length;
     select("#summary-projects").textContent = (data.summary && data.summary.projects) || 0;
+    select("#summary-examples").textContent = (data.summary && data.summary.examples) || 0;
     select("#summary-published").textContent = platformStatuses.published || 0;
     select("#summary-pending").textContent =
       (platformStatuses.under_review || 0) +
@@ -138,7 +139,7 @@
     select("#empty-state").hidden = projects.length > 0;
     if (!projects.length) {
       list.innerHTML = "";
-      select("#project-detail").innerHTML = '<div class="empty-detail">没有符合当前条件的项目。</div>';
+      select("#project-detail").innerHTML = '<div class="empty-detail">没有符合当前条件的内容项目。运行 <code>content-publishing new-project --help</code> 创建第一个项目；命令不会替你编造验收证据。</div>';
       return;
     }
     if (!projects.some(function (project) { return project.project_id === state.selectedId; })) {
@@ -148,7 +149,7 @@
       return [
         '<button class="project-button" type="button" data-project-id="', escapeHtml(project.project_id),
         '" aria-current="', project.project_id === state.selectedId, '">',
-        '<div class="project-button__top"><span class="project-button__id">', escapeHtml(project.project_id),
+        '<div class="project-button__top"><span class="project-button__id">', project.kind === "example" ? "DEMO · " : "", escapeHtml(project.project_id),
         "</span>", badge(project.status), "</div>",
         "<h3>", escapeHtml(project.title), "</h3>",
         '<div class="project-button__meta"><span>', project.counts.platforms,

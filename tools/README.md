@@ -1,20 +1,43 @@
-# 工具
+# 工具入口
 
-`capability_check.py` 只检测，不安装、不登录、不打开公开页面。它会把 Skill、CLI、引擎和本机包装器拆开记录。
+推荐安装后统一使用：
 
-`build_dashboard.py` 读取 `projects/registry.json`，把登记项目的真源数据重建为 `dashboard/data.js`。看板从 `file://` 打开时也能工作，不需要本地服务器。使用 `--check` 可验证现有缓存与注册表、真源摘要及内容是否一致，检查模式不会写文件。看板保留每个平台最近 30 条快照，并在最近两条有数值的快照之间计算变化量。
-
-`release_digest.py` 计算当前发布内容集合的确定性 SHA-256，用于冻结版本和绑定一次性授权。
-
-`install_local_skill.py` 把仓库内的 `content-publishing-sop` Skill 安全安装到 Codex 用户 Skill 目录。目标已存在且不同会阻断，不会静默覆盖。
-
-`portability_check.py` 检查目录完整性、JSON、项目注册表、注册项目默认门禁、适配器绝对路径和看板引用。各内容项目的提示词、资产哈希和发布门禁由 `validator/validate.py` 检查。
-
-这些脚本都兼容 Python 3.9+，只使用标准库。
-
-可选依赖：
-
-```text
-Pillow  # 更深入的图片检查，基础尺寸读取不需要
-ffmpeg  # 最终视频技术检查
+```bash
+content-publishing --help
 ```
+
+未安装 console script 时，仓库内等价入口是：
+
+```bash
+python3 tools/content_publishing.py --help
+```
+
+## 生命周期命令
+
+- `bootstrap`：从 GitHub 建立公共工具 checkout，并可安装宿主薄入口；
+- `install / uninstall`：只管理由本工具安装且未被用户修改的 IDE 入口；
+- `update / rollback`：只管理本项目自身版本；
+- `deps list / check / upgrade`：发现和定向升级外部 CLI，缺省只预览；
+- `doctor`：检查能力、可移植性、看板和可选测试。
+
+## 内容事务命令
+
+- `new-project`：复制模板、填入真实来源信息并更新注册表；
+- `freeze`：默认门禁通过后冻结 release digest；
+- `grant`：保存用户最终确认并创建范围化一次性授权；
+- `prepare`：整批动作门禁通过后创建全部 pending intents；
+- `settle`：根据连接器返回证据结算回执和平台状态；
+- `platforms`：显示官方 API、浏览器和人工通道能力；
+- `mcp serve`：向支持 MCP 的 IDE 暴露同一事务核心。
+
+## 保留的底层脚本
+
+- `capability_check.py`：检测本机能力，不安装、不登录；
+- `build_dashboard.py`：从注册表和项目真源重建 `dashboard/data.js`；
+- `release_digest.py`：计算发布内容集合 SHA-256；
+- `portability_check.py`：检查目录、路径、项目门禁和看板新鲜度；
+- `full_schema_check.py`：使用可选标准 `jsonschema` 包运行 Draft 2020-12 检查；
+- `version_check.py`：检查 VERSION、包元数据、CHANGELOG 和 Release tag 一致；
+- `install_local_skill.py`：旧版 Codex-only 安装入口，兼容保留。
+
+核心流程兼容 Python 3.9+，只使用标准库。完整 JSON Schema、Pillow、FFmpeg、Browser Use 等均属于可选增强能力。

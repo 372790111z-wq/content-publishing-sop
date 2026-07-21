@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.1",
+  "project_id": "quickstart-demo",
+  "required_stages": ["original_need", "new_problem", "attempt", "user_feedback", "decision", "rationale", "implementation_result", "acceptance_evidence", "unresolved"],
+  "events": [
+    {"id": "event-original", "sequence": 1, "at": "2026-06-28T10:00:00+08:00", "stage": "original_need", "summary": "团队需要一份发布检查清单。", "details": "检查内容、平台和公开结果。", "evidence": ["content/master.md#原始需求"], "supersedes": []},
+    {"id": "event-problem", "sequence": 2, "at": "2026-06-28T14:00:00+08:00", "stage": "new_problem", "summary": "普通清单无法证明内容没有漏项。", "details": "尤其容易遗漏完整提示词。", "evidence": ["content/master.md#新发现的问题"], "supersedes": []},
+    {"id": "event-attempt", "sequence": 3, "at": "2026-06-29T09:00:00+08:00", "stage": "attempt", "summary": "先尝试只维护一篇 Markdown。", "details": "无法表示平台状态和发布回执。", "evidence": ["content/master.md#尝试过的方案"], "supersedes": []},
+    {"id": "event-feedback", "sequence": 4, "at": "2026-06-29T15:00:00+08:00", "stage": "user_feedback", "summary": "用户要求过程、媒体和完整提示词都能检查。", "details": "并要求其他 IDE 能恢复。", "evidence": ["content/master.md#用户反馈"], "supersedes": []},
+    {"id": "event-decision", "sequence": 5, "at": "2026-06-30T10:00:00+08:00", "stage": "decision", "summary": "采用单一真源加确定性门禁。", "details": "平台稿只作为派生物。", "evidence": ["content/master.md#最终决定"], "supersedes": ["event-attempt"]},
+    {"id": "event-rationale", "sequence": 6, "at": "2026-06-30T11:00:00+08:00", "stage": "rationale", "summary": "可验证状态比模糊的完成描述更可靠。", "details": "摘要、授权和回执可以互相校验。", "evidence": ["content/master.md#决定理由"], "supersedes": []},
+    {"id": "event-result", "sequence": 7, "at": "2026-07-01T16:00:00+08:00", "stage": "implementation_result", "summary": "完成模板、校验器和本地看板。", "details": "示例只展示内容治理，不伪装真实发布。", "evidence": ["content/master.md#实施结果"], "supersedes": []},
+    {"id": "event-acceptance", "sequence": 8, "at": "2026-07-01T18:00:00+08:00", "stage": "acceptance_evidence", "summary": "结构校验和可移植性检查通过。", "details": "需求被明确验收。", "evidence": ["content/master.md#验收证据"], "supersedes": []},
+    {"id": "event-unresolved", "sequence": 9, "at": "2026-07-01T18:10:00+08:00", "stage": "unresolved", "summary": "真实平台仍需要登录、授权和连接器。", "details": "示例保持未发布状态。", "evidence": ["content/master.md#未解决问题"], "supersedes": []},
+    {"id": "event-content-request", "sequence": 10, "at": "2026-07-02T09:00:00+08:00", "stage": "user_feedback", "summary": "用户在验收后要求把过程整理成可复用示例。", "details": "内容流程由此正式开始。", "evidence": ["content/master.md#为什么形成这篇内容"], "supersedes": []}
+  ]
+}

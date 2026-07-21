@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "name": "content-publishing-sop",
+  "version": "0.2.0",
+  "positioning": "cross-IDE content production, validation and publishing governance toolkit",
+  "entry_boundary": "Only start after the source requirement is implemented, accepted, and the user later requests reusable content.",
+  "entrypoints": {
+    "human": "README.md",
+    "agent": "START-HERE.md",
+    "cli": "content-publishing",
+    "bundled_cli": "tools/content_publishing.py",
+    "mcp": "content-publishing mcp serve",
+    "dashboard": "dashboard/index.html"
+  },
+  "implemented": [
+    "project scaffolding and registry transaction",
+    "content and canonical-prompt validation",
+    "release freeze",
+    "scoped grants",
+    "pending intents and receipt settlement",
+    "CLI and MCP transaction core",
+    "self update and rollback",
+    "external dependency discovery and named upgrade",
+    "static dashboard and metrics"
+  ],
+  "not_claimed": [
+    "pre-authorized official publishing APIs for every platform",
+    "automatic login, CAPTCHA or MFA",
+    "public delivery before reader-view verification"
+  ],
+  "data_layers": {
+    "public_tool": "this repository",
+    "private_content": "local or controlled private storage",
+    "local_secrets": "never stored in this repository"
+  },
+  "upgrade_boundaries": {
+    "project": "content-publishing update",
+    "external_dependencies": "content-publishing deps",
+    "automatic_bulk_dependency_upgrade": false
+  }
+}

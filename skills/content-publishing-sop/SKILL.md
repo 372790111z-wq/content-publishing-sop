@@ -7,6 +7,8 @@ description: Turn a completed and accepted requirement into a complete, reusable
 
 Use the workspace workbench as the only source of truth. Keep this skill as a thin launcher and orchestrator; never copy the full SOP into the installed skill or invent a second workflow.
 
+When `<workbench>/tools/content_publishing.py` is available, prefer its transactional commands (or the bundled MCP server) for project creation, release freezing, grants, pending intents and receipt settlement. Do not reimplement those mutations ad hoc in the skill.
+
 ## Locate the workbench
 
 Run:
@@ -100,6 +102,8 @@ python3 tools/build_dashboard.py --check
 ```
 
 Treat nonzero exits as gates, not cosmetic failures. Diagnose safe fixes; never edit generated dashboard data to hide a source problem.
+
+Project self-update and external dependency update are separate operations. `content-publishing update` only manages the tool checkout. `content-publishing deps` may inspect external CLIs, but an actual named dependency upgrade still requires explicit user authorization and `--apply`.
 
 ## Keep the dashboard content-only
 

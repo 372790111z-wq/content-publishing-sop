@@ -17,6 +17,7 @@
 4. 读取 projects/registry.json，找到目标内容项目，再读取 project-manifest.json、decision-log.json、content-requirements.json、platform-status.json、metrics.json、handoff-state.json 和 publication-receipts.json。
 5. 不要只依赖当前聊天记录。以项目文件恢复目标、时间线、最终方案、未完成项和授权状态。
 6. 先检查 project-manifest.json.source_work：来源必须是 accepted 的 completed_requirement，有可解析的验收证据；content_requested_at 不得早于 accepted_at，并且有我明确要求沉淀内容的证据。任一条件不成立时停止，不创建内容项目，也不继续写稿。
+7. 如果存在 `content-publishing` 或 `tools/content_publishing.py`，项目创建、release 冻结、grant、pending intent 和回执结算优先调用统一事务命令；不要由每个 IDE 自己重写一套 JSON 状态逻辑。支持 MCP 时可以连接 `content-publishing mcp serve`，它与 CLI 共用同一核心。
 
 二、能力检测
 
@@ -25,6 +26,8 @@
 工具状态只能是 unavailable、detected、tested、blocked 或 manual。工具存在但没有运行真实测试时，不能写 tested。
 
 Browser Use 必须分别记录 Skill、Browser Harness CLI、Browser Use 引擎和隔离包装器，不能把版本混为一个。视频制作优先使用当前 IDE 可以直接调用的插件或 CLI；纯 GUI 工具不进入自动执行主链。ChatCut 用于工程级制作与验收，FFmpeg/ffprobe 用于导出文件级技术验收。
+
+本项目升级与外部 CLI 升级必须分开。`content-publishing update` 只管理工具 checkout；`content-publishing deps` 只检测或定向升级明确指定的依赖。发现新版本不等于获得升级授权。
 
 缺少工具时先使用适配层的安全替代方案。替代方案达不到原验收标准时，将对应状态写为 unknown 或 pending，并报告缺口，不得假装完成。
 
