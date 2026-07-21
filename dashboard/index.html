@@ -29,7 +29,7 @@
       <article class="summary-card summary-card--ink">
         <span>内容项目</span>
         <strong id="summary-projects">0</strong>
-        <small>纳入工作台</small>
+        <small><span id="summary-examples">0</span> 个脱敏演示另列</small>
       </article>
       <article class="summary-card">
         <span>公开平台</span>
@@ -73,7 +73,7 @@
         <span>只看有门禁问题的项目</span>
       </label>
       <div class="control-bar__hint">
-        更新并检查：<code>python3 tools/build_dashboard.py</code> · <code>python3 tools/build_dashboard.py --check</code>
+        更新并检查：<code>content-publishing doctor</code> · <code>python3 tools/build_dashboard.py --check</code>
       </div>
     </section>
 
@@ -81,7 +81,9 @@
       <aside class="project-rail" aria-label="项目列表">
         <div class="section-label">PROJECT FILES</div>
         <div id="project-list" class="project-list"></div>
-        <div id="empty-state" class="empty-state" hidden>没有符合条件的项目。</div>
+        <div id="empty-state" class="empty-state" hidden>
+          没有符合条件的内容项目。先运行 <code>content-publishing new-project --help</code>，或重新启用脱敏示例。
+        </div>
       </aside>
 
       <section id="project-detail" class="project-detail" aria-live="polite">

@@ -1,0 +1,14 @@
+{
+  "schema_version": "1.1",
+  "project_id": "quickstart-demo",
+  "collection_plan": {
+    "mode": "hybrid",
+    "timezone": "Asia/Shanghai",
+    "checkpoints": [
+      {"id": "first-review", "due_at": "2099-01-01T00:00:00+08:00", "required": true, "note": "示例未发布，因此没有指标。"}
+    ],
+    "last_attempt_at": null,
+    "next_due_at": null
+  },
+  "snapshots": []
+}

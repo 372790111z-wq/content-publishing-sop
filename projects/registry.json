@@ -1,4 +1,10 @@
 {
   "schema_version": "1.0",
-  "projects": []
+  "projects": [
+    {
+      "path": "../examples/quickstart-demo",
+      "enabled": true,
+      "kind": "example"
+    }
+  ]
 }

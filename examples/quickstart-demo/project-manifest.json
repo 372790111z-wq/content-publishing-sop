@@ -1,0 +1,49 @@
+{
+  "schema_version": "1.2",
+  "project_id": "quickstart-demo",
+  "title": "第一次运行的完整示例",
+  "summary": "用虚构需求展示从验收到内容沉淀、校验和待发布状态的完整数据结构。",
+  "status": "content_generation",
+  "created_at": "2026-07-01T10:00:00+08:00",
+  "updated_at": "2026-07-02T10:00:00+08:00",
+  "owner": "demo",
+  "source_work": {
+    "source_type": "completed_requirement",
+    "title": "为团队建立可复用的发布检查清单",
+    "status": "accepted",
+    "accepted_at": "2026-07-01T18:00:00+08:00",
+    "acceptance_evidence": ["decision-log.json#event-acceptance"],
+    "reuse_reason": "这段过程展示了如何把已完成需求转成可验证的内容资产，适合其他团队复用。",
+    "content_requested_at": "2026-07-02T09:00:00+08:00",
+    "request_evidence": ["decision-log.json#event-content-request"]
+  },
+  "files": {
+    "decision_log": "decision-log.json",
+    "content_requirements": "content-requirements.json",
+    "platform_status": "platform-status.json",
+    "metrics": "metrics.json",
+    "checksums": "checksums.json",
+    "master_content": "content/master.md",
+    "handoff": "HANDOFF.md",
+    "handoff_state": "handoff-state.json",
+    "publication_receipts": "publication-receipts.json"
+  },
+  "authorization": {
+    "local_changes": false,
+    "public_publish": false,
+    "delete_or_overwrite": false,
+    "external_sync": false,
+    "note": "示例没有发布授权。",
+    "grants": []
+  },
+  "release": {
+    "status": "draft",
+    "version": "v0",
+    "frozen_at": null,
+    "release_digest": null,
+    "decision_sequence": null,
+    "invalidated_at": null,
+    "invalidated_reason": null
+  },
+  "last_validation": {"status": "unknown", "at": null, "report": null}
+}

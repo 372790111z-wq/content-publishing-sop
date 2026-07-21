@@ -1,47 +1,102 @@
-# 工具安装与能力边界
+# 安装、升级与能力边界
 
-如果你还不熟悉工作台的操作顺序，先阅读 `USAGE-GUIDE.md`。本文件只解释工具安装和能力边界。
+## 1. 最小环境
 
-核心工作台不要求一次装齐所有工具。先运行能力检测，再补当前任务真正需要的能力。
+- Python 3.9+；
+- Git，用于可回滚的工具安装和 fast-forward 升级；
+- 能读写 UTF-8、Markdown 和 JSON 的 IDE/Agent；
+- 一个能打开本地 HTML 的现代浏览器。
 
-## 最小环境
+核心校验、CLI、MCP、授权事务、回执和看板只使用 Python 标准库。
 
-- 能读写 UTF-8、Markdown 和 JSON 的 IDE 或 Agent；
-- 一个现代浏览器，用于打开本地看板；
-- Python 3.9+，用于能力检测、校验和重建看板数据。
+## 2. 一次安装
 
-## 安装 Codex Skill
-
-工作台自带 `skills/content-publishing-sop/`。在工作台根目录运行：
-
-```bash
-python3 tools/install_local_skill.py --check
-python3 tools/install_local_skill.py
-```
-
-安装器默认写入 `$CODEX_HOME/skills/content-publishing-sop`；未设置 `CODEX_HOME` 时写入 `~/.codex/skills/content-publishing-sop`。目标不存在时安装，内容完全一致时跳过，存在不同版本时阻断且不覆盖。安装后下一条 Codex 消息即可使用 `$content-publishing-sop`；若列表未刷新，重新打开 Codex。
-
-这个 Skill 是 Codex 专用薄入口。其他 IDE 使用 `adapters/`，不要把 Codex Skill 当成跨宿主通用安装包。
-
-校验器只使用 Python 标准库。安装后用下面的命令验证，不要只看安装器提示：
+直接使用仓库：
 
 ```bash
-python3 --version
-python3 validator/validate.py --help
-python3 tools/release_digest.py --help
+git clone https://github.com/372790111z-wq/content-publishing-sop.git
+cd content-publishing-sop
+python3 tools/content_publishing.py doctor --deep
 ```
 
-## 视频工具：避免重复理解
+安装统一命令并创建受管理 checkout：
 
-ChatCut 和 FFmpeg 有重叠，但验收层不同：
+```bash
+uv tool install 'git+https://github.com/372790111z-wq/content-publishing-sop.git'
+# 没有 uv 时：python3 -m pip install --user 'git+https://github.com/372790111z-wq/content-publishing-sop.git'
+content-publishing bootstrap --dest ~/content-publishing-sop --host codex
+content-publishing --root ~/content-publishing-sop doctor --deep
+```
 
-| 能力 | 首选 | 后备 | 证据 |
-|---|---|---|---|
-| 时间线、字幕、配音、画面编排 | IDE 可调用的 ChatCut 插件 | FFmpeg 或人工时间线 | 工程结构与指定帧 |
-| 最终文件流、时长、编码 | ffprobe | 媒体播放器人工检查 | 机器可读流信息 |
-| 长静音、连续黑屏 | FFmpeg 过滤器 | 全片人工检查 | 检测日志与时间段 |
+`bootstrap` 不会创建真实文章、安装外部 CLI 或登录平台。目标目录已有未知内容时会阻断。
 
-FFmpeg 安装包通常同时提供 `ffmpeg` 和 `ffprobe`。macOS 使用 Homebrew 时可运行：
+全局 `content-publishing` 只承担稳定启动；进入工作台或传入 `--root` 后，它自动转交给 checkout 内的最新版 CLI。日常项目升级不需要重新安装 console script。
+
+## 3. IDE 入口
+
+```bash
+content-publishing --root ~/content-publishing-sop install --host codex
+content-publishing --root ~/content-publishing-sop install --host cursor --dest /path/to/project
+content-publishing --root ~/content-publishing-sop install --host claude-code --dest /path/to/project
+```
+
+支持 `codex`、`claude-code`、`cursor`、`windsurf`、`vscode-agent` 和 `generic-agent`。安装器只覆盖由本工具安装、带管理标记且未被用户修改的入口；已有团队规则不满足这些条件时返回 `conflict`。
+
+检查或更新已管理入口：
+
+```bash
+content-publishing install --host codex --check
+content-publishing install --host codex --upgrade
+```
+
+## 4. 本项目升级
+
+```bash
+content-publishing --root ~/content-publishing-sop update --check
+content-publishing --root ~/content-publishing-sop update --dry-run
+content-publishing --root ~/content-publishing-sop update
+content-publishing --root ~/content-publishing-sop update --to v0.3.0
+content-publishing --root ~/content-publishing-sop rollback
+```
+
+约束：
+
+- 只管理 `content-publishing-sop` 工具 checkout；
+- 工作树不干净时阻断；
+- 只接受 fast-forward 目标；
+- 升级后自动运行单测、CLI 集成测试、可移植性和看板新鲜度检查；
+- 自动同步由本工具安装且未被用户修改的 IDE 入口；发现用户修改时保留文件并报告 conflict；
+- 验收失败时恢复升级前提交；
+- 不触碰私人内容目录、登录状态或外部 CLI。
+
+非 Git 安装需要先用新版安装包更新 console script，再继续管理 checkout。Release 资产附带 `SHA256SUMS.txt`。
+
+## 5. 外部 CLI 发现与升级
+
+```bash
+content-publishing deps list
+content-publishing deps check
+content-publishing deps check browser-use
+content-publishing deps upgrade browser-use
+content-publishing deps upgrade browser-use --apply
+```
+
+本工具会区分命令、Python 包和安装环境。只有能够确认原安装提供者时才生成升级命令；缺少 `--apply` 只显示计划。不存在“自动升级全部依赖”的入口。
+
+Browser Use 需要分别记录 Skill、Harness CLI、引擎和隔离启动器。FFmpeg 安装通常同时提供 `ffmpeg` 与 `ffprobe`。ChatCut 是 IDE 插件能力，不伪装成跨 IDE CLI。
+
+`deps list` 中 `commands[].version` 是当前可执行命令（通常是 Browser Harness CLI）自己报告的版本；`packages.browser-use` 才是其 Python 引擎包版本。Browser Use Skill 属于 IDE 指令层，不会因为二者版本相同或不同就被判定为重复，也不由 `deps upgrade` 静默替换。
+
+## 6. 可选增强能力
+
+完整 JSON Schema：
+
+```bash
+python3 -m pip install -e '.[schema]'
+python3 tools/full_schema_check.py
+```
+
+视频文件级检查：
 
 ```bash
 brew install ffmpeg
@@ -49,40 +104,14 @@ ffmpeg -version
 ffprobe -version
 ```
 
-其他系统请使用系统包管理器或 FFmpeg 官方发行方式。命令存在只算 `detected`，至少对一个真实视频运行检查后才能写 `tested`。
-
-剪映等只能通过 GUI 操作的工具不属于自动执行主链，只能记录为人工备选。
-
-## 图片检查
-
-基础校验器可以读取 PNG、JPEG 和 GIF 的尺寸。Pillow 是可选增强项：
+图片增强检查：
 
 ```bash
 python3 -m pip install Pillow
-python3 -c "from PIL import Image; print('Pillow OK')"
 ```
 
-如果环境禁止安装依赖，保留基础检查并增加人工清晰度检查。
+这些增强能力不可用时可以降级，但必须如实记录为 `unavailable`、`detected`、`blocked` 或 `manual`，不能伪装成 `tested`。
 
-## Browser Use：四层结构
+## 7. 敏感信息
 
-Browser Use 相关能力不得只记录一个版本号：
-
-1. Browser Use Skill：IDE 读取的操作规则；
-2. Browser Harness CLI：通常暴露为 `browser-use` 命令；
-3. Browser Use 引擎：实际自动化包；
-4. 隔离启动器：设备本地策略，例如 `browser-use-isolated`。
-
-安装和连接方式变化较快。对应 IDE 的适配层必须先读取当前官方说明和本机 Skill，再安装。验收至少包括 CLI 帮助、doctor、真实测试页和隔离边界；安装包落盘不算完成。
-
-Browser Use 不可用时，可以使用 IDE 自带浏览器、Playwright 或人工公开页面验收。替代后仍要保留相同证据标准。
-
-发布后的指标采集也遵循同一降级顺序。无论通过平台 API、创作者后台、公开页面还是人工录入，非空指标都必须带采集时间、来源和证据；没有读到的值保持 `null`。工作台不会要求为了展示完整而伪造 0。
-
-## 安装权限
-
-能力检测不会自动安装任何软件。安装、升级、覆盖配置、登录 Cloud 或产生费用前必须单独确认。
-
-## 不需要额外安装的能力
-
-JSON Schema 子集校验、冻结摘要、一次性授权门禁、发布回执、项目注册表、指标检查点和静态看板都由工作台内的 Python 标准库脚本完成。它们不是 Browser Use、ChatCut 或 FFmpeg 的附属能力，也不依赖某个 IDE 插件。
+工具、私人内容和本机凭证是三层数据。Cookie、Token、MFA、浏览器用户目录、系统钥匙串和新平台协议永远不进入公共仓库或升级包。详见 `SECURITY.md`。

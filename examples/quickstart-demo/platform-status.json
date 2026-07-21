@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.1",
+  "project_id": "quickstart-demo",
+  "platforms": [
+    {
+      "platform": "example",
+      "status": "not_started",
+      "content_path": "content/master.md",
+      "public_url": null,
+      "published_at": null,
+      "release_digest": null,
+      "reader_validation": "unknown",
+      "prompt_delivery": "full_text",
+      "evidence": [],
+      "blocker": null
+    }
+  ]
+}

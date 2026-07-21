@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 
 DATA_PREFIX = "window.CONTENT_SOP_DATA = "
-DASHBOARD_SCHEMA_VERSION = "1.3"
+DASHBOARD_SCHEMA_VERSION = "1.4"
 METRIC_COMPLETE_STATUSES = {"captured", "partial", "unavailable"}
 SOURCE_FILE_KEYS = (
     "decision_log", "content_requirements", "platform_status", "metrics",
@@ -141,7 +141,7 @@ def source_digest(projects: List[Path], registry_path: Optional[Path]) -> str:
     return digest.hexdigest()
 
 
-def project_record(project: Path, dashboard: Path) -> Dict[str, Any]:
+def project_record(project: Path, dashboard: Path, kind: str = "project") -> Dict[str, Any]:
     manifest = read_json(project / "project-manifest.json", {})
     files = manifest.get("files", {}) if isinstance(manifest.get("files"), dict) else {}
     decisions = read_json(resolve(project, files.get("decision_log"), "decision-log.json"), {})
@@ -160,6 +160,7 @@ def project_record(project: Path, dashboard: Path) -> Dict[str, Any]:
     grants = manifest.get("authorization", {}).get("grants", [])
     active_grants = [item for item in grants if isinstance(item, dict) and item.get("status") == "active"]
     return {
+        "kind": kind,
         "project_id": manifest.get("project_id", project.name),
         "title": manifest.get("title", project.name),
         "summary": manifest.get("summary", ""),
@@ -199,7 +200,13 @@ def project_record(project: Path, dashboard: Path) -> Dict[str, Any]:
 
 def build(root: Path, output: Path, registry_path: Optional[Path] = None) -> Dict[str, Any]:
     project_paths, registry = discover_projects(root, registry_path)
-    projects = [project_record(path, output.parent) for path in project_paths]
+    kinds: Dict[Path, str] = {}
+    if registry:
+        registry_data = read_json(registry, {})
+        for item in registry_data.get("projects", []):
+            if isinstance(item, dict) and item.get("path"):
+                kinds[(registry.parent / item["path"]).resolve()] = str(item.get("kind") or "project")
+    projects = [project_record(path, output.parent, kinds.get(path.resolve(), "project")) for path in project_paths]
     status_counts: Dict[str, int] = {}
     platform_counts: Dict[str, int] = {}
     metric_counts: Dict[str, int] = {}
@@ -222,7 +229,8 @@ def build(root: Path, output: Path, registry_path: Optional[Path] = None) -> Dic
         "source_digest": source_digest(project_paths, registry),
         "registry": Path(os.path.relpath(registry, output.parent)).as_posix() if registry else None,
         "summary": {
-            "projects": len(projects),
+            "projects": sum(project.get("kind") != "example" for project in projects),
+            "examples": sum(project.get("kind") == "example" for project in projects),
             "project_statuses": status_counts,
             "platform_statuses": platform_counts,
             "metrics": {

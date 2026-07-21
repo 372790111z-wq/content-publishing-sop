@@ -2,6 +2,8 @@
 
 直接双击 `index.html` 即可打开，不需要服务器。数据通过 `data.js` 嵌入，因此不会受到浏览器 `file://` 读取 JSON 的限制。
 
+公共仓库首次打开会显示一个标有 `DEMO` 的完全虚构示例。它单独计数，不会冒充真实内容项目；禁用示例后，空状态会提示 `content-publishing new-project --help`。
+
 项目数据变化后运行：
 
 ```bash
