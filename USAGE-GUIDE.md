@@ -2,6 +2,8 @@
 
 这份教程面向第一次使用本工作台的人。你不需要先理解所有 JSON、校验器或发布回执；先按“最快开始”操作，遇到问题再查后面的详细章节。
 
+从 v0.2.0 开始，优先使用统一 `content-publishing` CLI 或 `python3 tools/content_publishing.py`。底层脚本继续保留，但新用户不再需要手工复制模板和维护约 8 个 JSON 文件。
+
 ## 1. 先理解它负责什么
 
 这不是需求管理工具，也不会在你做需求时自动写文章。正确顺序是：
@@ -16,7 +18,7 @@ flowchart LR
     F --> G[完整性校验]
     G --> H[展示最终内容和平台清单]
     H --> I[用户一次确认]
-    I --> J[直接发布到已列明平台]
+    I --> J[进入已列明平台的连接器或人工执行]
     J --> K[公开验收与效果采集]
 ```
 
@@ -27,7 +29,7 @@ flowchart LR
 | 场景 | 你要做什么 | 推荐入口 |
 |---|---|---|
 | 当前电脑继续使用 | 在 IDE 中打开现有工作区，让 Agent 读取本工作台 | `START-HERE.md` |
-| 换电脑或换 IDE | 克隆私有 GitHub 仓库，再让新 Agent 恢复 | 本仓库地址 |
+| 换电脑或换 IDE | 克隆公共工具仓库，并从受控私有存储恢复个人内容项目 | `bootstrap` 与本仓库地址 |
 | 只想查看发布情况 | 双击本地看板 | `dashboard/index.html` |
 | 想让 Agent 一次读懂全部规则 | 粘贴完整执行提示词 | `EXECUTE-PROMPT.md` |
 
@@ -42,6 +44,24 @@ flowchart LR
 Skill 会自动寻找当前工作区中的 `content-publishing-sop`，然后读取工作台真源。Skill 本身只是启动与编排入口，不复制完整 SOP，因此规则仍只维护一份。
 
 Skill 只适用于 Codex。Claude Code、Cursor、Windsurf、VS Code Agent 和 Grok 继续使用 `adapters/` 中的入口。
+
+### 2.2 任意 IDE 的统一命令
+
+安装 CLI 后，各 IDE 共用同一个事务核心：
+
+```bash
+content-publishing version
+content-publishing bootstrap --dest ~/content-publishing-sop --host codex
+content-publishing --root ~/content-publishing-sop doctor --deep
+```
+
+支持 MCP 的 IDE 可以连接：
+
+```bash
+content-publishing --root ~/content-publishing-sop mcp serve
+```
+
+CLI/MCP 负责项目状态、门禁、grant、pending intent 和回执；真实平台连接器仍需要官方授权、已登录浏览器或人工操作。
 
 ---
 
@@ -214,6 +234,15 @@ py -3 validator\validate.py --help
 
 ### 4.3 安装 Codex Skill（推荐）
 
+新版本推荐统一入口：
+
+```bash
+python3 tools/content_publishing.py install --host codex --check
+python3 tools/content_publishing.py install --host codex
+```
+
+下面的旧脚本仍兼容，但只负责 Codex Skill，不包含 CLI、MCP 或其他 IDE 适配器。
+
 先检查本机状态：
 
 ```bash
@@ -246,6 +275,13 @@ python3 tools/install_local_skill.py
 python3 tools/capability_check.py --write reports/capability-report.json
 ```
 
+首次安装推荐直接运行聚合检查：
+
+```bash
+content-publishing doctor --deep
+content-publishing deps list
+```
+
 重点看这些状态：
 
 | 状态 | 含义 |
@@ -264,14 +300,20 @@ Browser Use、ChatCut 和 FFmpeg 都不是工作台运行的硬依赖：
 
 ### 4.5 登记一个新内容项目
 
-推荐让 Agent 自动完成。可以直接发送：
+推荐先运行事务化创建命令，再让 Agent 从真实事实补全内容：
+
+```bash
+content-publishing new-project <project-id> --help
+```
+
+命令会一次完成模板复制、ID 与基础来源字段写入、平台初始化和注册表更新；缺少验收证据时直接阻断。也可以向 Agent 发送：
 
 ```text
 来源需求已经完成并验收，请为它创建一个新的内容项目。
 
 要求：
 1. 读取 START-HERE.md、AGENT-PROTOCOL.md、SOURCE_OF_TRUTH.md 和 SOP.md；
-2. 从 templates/project 复制模板到 projects/<简短项目ID>；
+2. 使用 content-publishing new-project 创建 projects/<简短项目ID>；
 3. 在 decision-log.json 中完整恢复原始需求、问题、尝试、反馈、决定、理由、实施、验收和未解决项；
 4. 在 project-manifest.json.source_work 中引用真实的验收事件和本次内容请求事件；
 5. 写明为什么值得复用；
@@ -321,22 +363,36 @@ errors=0
 内容全部完成后计算摘要：
 
 ```bash
-python3 tools/release_digest.py --project projects/my-content-project
+content-publishing freeze projects/my-content-project --version v1
 ```
 
-命令会输出 64 位 SHA-256。Agent 需要把它写入 `project-manifest.json.release.release_digest`，同时写入版本号、冻结时间和最新决策序号，再运行：
+命令先运行默认门禁，自动写入摘要、版本、冻结时间和最新决策序号，再运行 strict 门禁；失败时恢复原 manifest。底层摘要检查仍可单独运行：
 
 ```bash
-python3 validator/validate.py \
-  --project projects/my-content-project \
-  --strict
+python3 tools/release_digest.py --project projects/my-content-project
 ```
 
 冻结后如果文章、图片、视频、提示词或来源身份发生改变，旧摘要和旧发布授权都会失效，必须重新计算。
 
 ### 4.8 验证发布授权
 
-在你确认最终内容和平台清单后，Agent 会创建一次性 grant。真正访问平台前应按整批平台运行：
+在你确认最终内容和平台清单后，使用事务命令创建一次性 grant：
+
+```bash
+content-publishing grant projects/my-content-project \
+  --action public_publish \
+  --platform 知乎 \
+  --platform 小红书 \
+  --evidence '用户确认原文'
+```
+
+真正访问平台前整批创建 pending intents：
+
+```bash
+content-publishing prepare projects/my-content-project --grant-id <grant-id>
+```
+
+底层门禁等价于：
 
 ```bash
 python3 validator/validate.py \
@@ -431,7 +487,7 @@ python3 validator/validate.py \
 
 ```mermaid
 flowchart LR
-    A[GitHub 私有仓库] --> B[新电脑 git clone]
+    A[公共工具仓库 + 私人内容存储] --> B[新电脑 bootstrap / git clone]
     B --> C[确认远端与版本]
     C --> D[新 IDE 读取 START-HERE]
     D --> E[安装或连接 Skill]
@@ -461,14 +517,15 @@ flowchart LR
 
 ## 7. 在新电脑获取仓库
 
-推荐使用 Git 克隆私有仓库：
+推荐从公共工具仓库创建受管理 checkout：
 
 ```bash
-git clone https://github.com/<GitHub账号>/content-publishing-sop.git
-cd content-publishing-sop
+uv tool install 'git+https://github.com/372790111z-wq/content-publishing-sop.git'
+# 没有 uv 时可使用 python3 -m pip install --user
+content-publishing bootstrap --dest ~/content-publishing-sop
 ```
 
-仓库默认只保存可复用的 SOP、Skill、模板、校验器和看板源码，不包含个人内容项目。需要跨机继续某个内容项目时，应在明确审查隐私、素材版权和平台链接后，把该项目放入受控的私有存储；不要未经检查直接提交到仓库。
+公共仓库保存 SOP、CLI、MCP、Skill、模板、校验器、看板源码和完全虚构的示例，不包含个人内容项目。需要跨机继续某个内容项目时，应在明确审查隐私、素材版权和平台链接后，从受控私有存储恢复；不要未经检查直接提交到公共仓库。
 
 如果不能使用 Git，也可以从 GitHub 下载源码 ZIP。它只是某个提交的快照；应从可信仓库下载，并记录对应提交，而不是假定本地文件天然是最新版本。
 
@@ -482,11 +539,15 @@ git status -sb
 git log -1 --oneline
 ```
 
-确认三件事：远端属于预期账号和仓库、当前分支没有意外修改、最新提交是你打算使用的版本。后续更新使用：
+确认三件事：远端属于预期账号和仓库、当前分支没有意外修改、最新提交是你打算使用的版本。后续工具升级使用：
 
 ```bash
-git pull --ff-only
+content-publishing update --check
+content-publishing update --dry-run
+content-publishing update
 ```
+
+升级器要求工作树干净，只接受 fast-forward，并在更新后运行测试、可移植性和看板检查。它只更新本项目；Browser Use、FFmpeg 等外部 CLI 使用 `content-publishing deps ...` 单独检查和定向升级。
 
 如果使用 GitHub 下载的源码 ZIP，解压后应看到一个工作台目录：
 
@@ -508,8 +569,8 @@ content-publishing-sop/
 进入仓库目录，运行：
 
 ```bash
-python3 tools/install_local_skill.py --check
-python3 tools/install_local_skill.py
+content-publishing install --host codex --check
+content-publishing install --host codex
 ```
 
 安装成功后，在 Codex 下一条消息中使用：
@@ -540,7 +601,7 @@ projects/registry.json，以及目标项目 manifest 指向的全部真源文件
 5. 列出本机缺少的工具、需要重新登录的平台，以及最小下一步；
 6. 在我确认最终内容和明确平台清单前，不执行公开发布。
 
-最终内容和平台清单经我一次确认后，可以直接发布到这些平台，不要再二次询问。
+最终内容和平台清单经我一次确认后，可以直接进入这些平台的发布执行，不要再二次询问；连接器没有返回公开证据前不得写成已发布。
 删除、覆盖、站外同步、登录、验证码、MFA、授权和付款仍需单独确认。
 ```
 
@@ -563,6 +624,8 @@ projects/registry.json，以及目标项目 manifest 指向的全部真源文件
 进入 `content-publishing-sop` 后运行：
 
 ```bash
+content-publishing doctor --deep
+content-publishing deps list
 python3 tools/capability_check.py
 python3 tools/build_dashboard.py
 python3 tools/build_dashboard.py --check
@@ -574,6 +637,7 @@ python3 -m unittest -v test_validator.py
 成功结果应包括：
 
 - Python 版本满足 3.9+；
+- CLI、MCP 和脱敏示例可读取；
 - 校验器测试全部通过；
 - 看板显示 `dashboard=current`；
 - 可移植性检查为 `passed`；
@@ -638,7 +702,7 @@ python3 validator/validate.py \
 - 没有未对账的 pending intent；
 - 没有相同 release、平台和动作的成功回执。
 
-如果迁移后修改了任何发布内容，应重新冻结，并重新向你展示最终内容与平台清单。你一次确认后直接发布，不再单独问“是否发布”。
+如果迁移后修改了任何发布内容，应重新冻结，并重新向你展示最终内容与平台清单。你一次确认后进入发布执行，不再单独问“是否发布”；只有取得平台证据并结算回执后，才能标记为已发布。
 
 ## 15. 跨机迁移完成标准
 
@@ -712,5 +776,10 @@ Agent 可以准备材料、打开页面、填写非敏感内容和检查结果�
 - `INSTALL.md`：工具安装和能力边界；
 - `skills/content-publishing-sop/`：可安装的 Codex Skill 源码；
 - `tools/install_local_skill.py`：安全安装或检查本机 Skill；
+- `tools/content_publishing.py`：不安装 console script 时的统一 CLI；
+- `content-publishing update`：只升级本项目；
+- `content-publishing deps ...`：检测并定向升级外部 CLI；
+- `content-publishing mcp serve`：跨 IDE MCP 入口；
+- `examples/quickstart-demo/`：完全虚构的端到端示例；
 - `dashboard/index.html`：本地内容发布看板；
 - `adapters/`：各 IDE 的薄适配入口。

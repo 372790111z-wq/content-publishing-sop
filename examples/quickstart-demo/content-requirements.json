@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.1",
+  "project_id": "quickstart-demo",
+  "required_story_stages": ["original_need", "new_problem", "attempt", "user_feedback", "decision", "rationale", "implementation_result", "acceptance_evidence", "unresolved"],
+  "story_coverage": [
+    {"stage": "original_need", "master_anchors": ["## 原始需求"], "decision_event_ids": ["event-original"]},
+    {"stage": "new_problem", "master_anchors": ["## 新发现的问题"], "decision_event_ids": ["event-problem"]},
+    {"stage": "attempt", "master_anchors": ["## 尝试过的方案"], "decision_event_ids": ["event-attempt"]},
+    {"stage": "user_feedback", "master_anchors": ["## 用户反馈"], "decision_event_ids": ["event-feedback"]},
+    {"stage": "decision", "master_anchors": ["## 最终决定"], "decision_event_ids": ["event-decision"]},
+    {"stage": "rationale", "master_anchors": ["## 决定理由"], "decision_event_ids": ["event-rationale"]},
+    {"stage": "implementation_result", "master_anchors": ["## 实施结果"], "decision_event_ids": ["event-result"]},
+    {"stage": "acceptance_evidence", "master_anchors": ["## 验收证据"], "decision_event_ids": ["event-acceptance"]},
+    {"stage": "unresolved", "master_anchors": ["## 未解决问题"], "decision_event_ids": ["event-unresolved"]}
+  ],
+  "canonical_prompt": {
+    "required": true,
+    "path": "content/canonical-prompt.md",
+    "sha256": "5573880ea35c9a7685aec25360f8e47bba5975e9604bd33d9b5f828e19ab64a2",
+    "bytes": 612,
+    "characters": 248,
+    "first_line": "# 一键执行提示词",
+    "last_line": "未知状态保持 unknown；没有证据的数据不得写成 0 或成功。",
+    "anchors": ["范围化一次性授权", "pending intent", "普通读者视角"]
+  },
+  "deliverables": [
+    {"id": "master", "kind": "master", "path": "content/master.md", "required": true, "prompt_delivery": "full_text", "platform": null}
+  ],
+  "prompt_card_sets": [],
+  "media": {"images": [], "videos": []}
+}

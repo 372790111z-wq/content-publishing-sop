@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "project_id": "quickstart-demo",
+  "updated_at": "2026-07-02T10:00:00+08:00",
+  "current_stage": "content_generation",
+  "last_success": "完成脱敏母稿和完整提示词",
+  "verified_evidence": ["content/master.md", "content/canonical-prompt.md"],
+  "pending_items": ["这是示例，不执行真实发布"],
+  "blockers": [],
+  "next_action": "创建自己的内容项目",
+  "decisions_required": [],
+  "last_validation": {"status": "unknown", "at": null, "report": null},
+  "metrics": {"checkpoint": null, "status": "not_due", "evidence": []},
+  "dashboard": {"generated_at": null, "status": "unknown"},
+  "active_grant_ids": []
+}

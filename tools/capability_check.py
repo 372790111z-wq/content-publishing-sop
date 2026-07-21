@@ -27,6 +27,13 @@ def first_line(text: str) -> str:
     return text.splitlines()[0].strip() if text.strip() else ""
 
 
+def concise_diagnostic(text: str) -> str:
+    """Return one useful error line without leaking a full Python traceback."""
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    useful = [line for line in lines if not line.startswith(("Traceback ", "File \"", "During handling"))]
+    return (useful[-1] if useful else (lines[-1] if lines else "command failed"))[:300]
+
+
 def executable_capability(name: str, version_args: List[str]) -> Dict[str, Any]:
     path = shutil.which(name)
     if not path:
@@ -35,8 +42,9 @@ def executable_capability(name: str, version_args: List[str]) -> Dict[str, Any]:
     return {
         "status": "tested" if result["ok"] else "detected",
         "path": path,
-        "version": first_line(result["output"]),
+        "version": first_line(result["output"]) if result["ok"] else None,
         "evidence": f"exit={result['exit_code']}",
+        "diagnostic": None if result["ok"] else concise_diagnostic(result["output"]),
     }
 
 
@@ -78,7 +86,8 @@ def browser_use_versions(executable: Optional[str]) -> Dict[str, Any]:
         result["cli"] = {
             "status": "tested" if version["ok"] else "detected",
             "path": executable,
-            "reported_version": first_line(version["output"]),
+            "reported_version": first_line(version["output"]) if version["ok"] else None,
+            "diagnostic": None if version["ok"] else concise_diagnostic(version["output"]),
         }
         try:
             shebang = Path(executable).read_text(encoding="utf-8", errors="ignore").splitlines()[0]

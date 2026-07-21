@@ -2,6 +2,8 @@
 
 本协议是所有 IDE 共同遵守的核心规则。宿主适配层只能补充调用方法，不能降低这里的验收标准。
 
+优先通过 `content-publishing` CLI 或其 MCP server 修改项目状态。CLI/MCP 共用同一个事务核心；浏览器、官方 API 和人工连接器只能执行已经通过门禁的外部动作，不能直接绕过 grant、pending intent 或回执。
+
 ## 0. 先守住内容项目边界
 
 本工作台只处理“已经完成并验收、随后由用户明确要求沉淀”的内容项目，不参与原需求的讨论、实现或验收，也不统计完成需求数量。
@@ -64,9 +66,11 @@
 
 Browser Use Skill、Browser Harness CLI 和 Browser Use 引擎是三个不同层级，必须分别记录。ChatCut 属于工程级视频制作与验收；FFmpeg/ffprobe 属于跨 IDE 的媒体技术检查。纯 GUI 工具不进入自动执行主链。
 
+本项目升级与外部 CLI 升级必须分开：`content-publishing update` 只管理工具 checkout；`content-publishing deps` 只检测或定向升级明确指定的依赖。Agent 不得把发现新版理解成自动升级授权。
+
 ## 5. 最终内容确认与范围化一次性授权
 
-最终审阅必须把最终文章、图片、视频、完整提示词和明确的目标平台清单一起展示给用户。当用户回复“确认”“内容没问题”“可以了”或同义表达时，这一次确认同时完成两件事：内容验收通过；授权把当前冻结版本直接发布或更新到刚展示的平台。Agent 必须立即生成 `approval_kind=content_and_platforms_confirmed` 的范围化一次性 grant 并进入发布，不得再问一次“是否发布”。
+最终审阅必须把最终文章、图片、视频、完整提示词和明确的目标平台清单一起展示给用户。当用户回复“确认”“内容没问题”“可以了”或同义表达时，这一次确认同时完成两件事：内容验收通过；授权把当前冻结版本发布或更新到刚展示的平台。Agent 必须立即生成 `approval_kind=content_and_platforms_confirmed` 的范围化一次性 grant 并进入发布执行，不得再问一次“是否发布”。“进入执行”不等于平台已经完成；连接器或人工返回证据并结算回执后才能改变公开状态。
 
 以下动作不包含在上述内容确认中，必须另行获得当次明确确认：
 
@@ -84,6 +88,8 @@ Browser Use Skill、Browser Harness CLI 和 Browser Use 引擎是三个不同层
 ```bash
 python3 validator/validate.py --project <项目目录> --action public_publish --platform <平台>
 ```
+
+推荐等价事务命令：`content-publishing grant` → `content-publishing prepare` → 连接器执行 → `content-publishing settle`。任何连接器都不得自行写成成功，必须把外部结果和证据交回事务核心结算。
 
 先把授权覆盖的全部平台一次性送入动作门禁。整批通过后，在任何外部调用前为全部平台写入状态为 `unknown` 的 pending intent 回执并绑定 `receipt_ids[]`；逐项结算，全部完成或对账后才把 grant 标为 `consumed`。进程中断留下的 pending intent 必须先从外部平台对账，禁止直接重试。同一 release、平台和动作已有成功回执时同样禁止重复执行。
 
