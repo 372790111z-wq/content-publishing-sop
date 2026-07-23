@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.1",
+  "schema_version": "1.3",
   "project_id": "quickstart-demo",
   "required_story_stages": ["original_need", "new_problem", "attempt", "user_feedback", "decision", "rationale", "implementation_result", "acceptance_evidence", "unresolved"],
   "story_coverage": [
@@ -23,8 +23,24 @@
     "last_line": "未知状态保持 unknown；没有证据的数据不得写成 0 或成功。",
     "anchors": ["范围化一次性授权", "pending intent", "普通读者视角"]
   },
+  "prompt_delivery_context": {
+    "content_origin": "experience_share",
+    "short_prompt_max_characters": 1800,
+    "max_prompt_card_pages": 2,
+    "existing_public_urls": [],
+    "external_hosting_authorized": false,
+    "decision_evidence": ["decision-log.json#event-decision"],
+    "carrier_confirmation": {
+      "status": "confirmed_none",
+      "candidate_id": null,
+      "confirmed_url": null,
+      "confirmed_at": "2026-07-02T09:30:00+08:00",
+      "evidence": ["decision-log.json#event-decision"],
+      "repository": null
+    }
+  },
   "deliverables": [
-    {"id": "master", "kind": "master", "path": "content/master.md", "required": true, "prompt_delivery": "full_text", "platform": null}
+    {"id": "master", "kind": "master", "path": "content/master.md", "required": true, "prompt_delivery": "full_text", "prompt_access_url": null, "platform": null}
   ],
   "prompt_card_sets": [],
   "media": {"images": [], "videos": []}

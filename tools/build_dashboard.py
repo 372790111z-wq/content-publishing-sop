@@ -16,7 +16,7 @@ DASHBOARD_SCHEMA_VERSION = "1.4"
 METRIC_COMPLETE_STATUSES = {"captured", "partial", "unavailable"}
 SOURCE_FILE_KEYS = (
     "decision_log", "content_requirements", "platform_status", "metrics",
-    "handoff_state", "publication_receipts",
+    "handoff_state", "publication_receipts", "editorial_policy", "editorial_reviews",
 )
 METRIC_FIELDS = ("views", "likes", "favorites", "comments", "shares", "follower_change")
 
@@ -150,6 +150,8 @@ def project_record(project: Path, dashboard: Path, kind: str = "project") -> Dic
     metrics = read_json(resolve(project, files.get("metrics"), "metrics.json"), {})
     handoff = read_json(resolve(project, files.get("handoff_state"), "handoff-state.json"), {})
     receipts = read_json(resolve(project, files.get("publication_receipts"), "publication-receipts.json"), {})
+    editorial_policy = read_json(resolve(project, files.get("editorial_policy"), "editorial-policy.json"), {})
+    editorial_reviews = read_json(resolve(project, files.get("editorial_reviews"), "editorial-reviews.json"), {})
     validation = read_json(project / "validation-report.json", {})
     media = requirements.get("media", {}) if isinstance(requirements.get("media"), dict) else {}
     platform_items = platform_status.get("platforms", [])
@@ -159,6 +161,18 @@ def project_record(project: Path, dashboard: Path, kind: str = "project") -> Dic
     path_from_dashboard = Path(os.path.relpath(project, dashboard))
     grants = manifest.get("authorization", {}).get("grants", [])
     active_grants = [item for item in grants if isinstance(item, dict) and item.get("status") == "active"]
+    text_kinds = {"master", "longform", "social", "video_script"}
+    required_text_ids = {
+        str(item.get("id")) for item in requirements.get("deliverables", [])
+        if isinstance(item, dict) and item.get("required") and item.get("kind") in text_kinds and item.get("id")
+    }
+    review_items = [item for item in editorial_reviews.get("reviews", []) if isinstance(item, dict)]
+    verified_review_ids = {
+        str(item.get("deliverable_id")) for item in review_items
+        if item.get("status") == "verified" and item.get("deliverable_id") in required_text_ids
+    }
+    author_voice = editorial_policy.get("author_voice", {}) if isinstance(editorial_policy.get("author_voice"), dict) else {}
+    platform_profiles = editorial_policy.get("platform_profiles", []) if isinstance(editorial_policy.get("platform_profiles"), list) else []
     return {
         "kind": kind,
         "project_id": manifest.get("project_id", project.name),
@@ -175,6 +189,13 @@ def project_record(project: Path, dashboard: Path, kind: str = "project") -> Dic
             "status": validation.get("status", manifest.get("last_validation", {}).get("status", "unknown")),
             "summary": validation.get("summary", {}),
             "gates": validation.get("gates", []),
+        },
+        "editorial": {
+            "author_voice_status": author_voice.get("status", "unknown"),
+            "author_voice_mode": author_voice.get("mode"),
+            "platform_profiles": len(platform_profiles),
+            "required_reviews": len(required_text_ids),
+            "verified_reviews": len(verified_review_ids),
         },
         "counts": {
             "decisions": len(decisions.get("events", [])),

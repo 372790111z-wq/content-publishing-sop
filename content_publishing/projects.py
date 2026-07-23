@@ -137,3 +137,87 @@ def new_project(
         "registry": str(registry_path),
         "next": "补全真实 decision-log、母稿和 canonical prompt，然后运行 validate。",
     }
+
+
+def initialize_editorial(root: Path, project_value: str) -> Dict[str, Any]:
+    """Add editorial policy/review sources to an existing project without overwriting user files."""
+    project = Path(project_value).expanduser()
+    if not project.is_absolute():
+        project = root / project
+    project = project.resolve()
+    manifest_path = project / "project-manifest.json"
+    if not manifest_path.is_file():
+        raise CommandError(f"不是有效内容项目：{project}")
+    template = root / "templates" / "project"
+    if not template.is_dir():
+        raise CommandError(f"项目模板不存在：{template}")
+
+    manifest = read_json(manifest_path)
+    project_id = str(manifest.get("project_id") or project.name)
+    files = manifest.setdefault("files", {})
+    created: List[str] = []
+    policy_added = False
+    changed = False
+
+    def project_target(relative_value: Any) -> Path:
+        if not isinstance(relative_value, str) or not relative_value.strip():
+            raise CommandError("编辑质量文件路径必须是项目内的非空相对路径。")
+        relative_path = Path(relative_value)
+        if relative_path.is_absolute():
+            raise CommandError(f"编辑质量文件不能使用绝对路径：{relative_value}")
+        target = (project / relative_path).resolve()
+        try:
+            target.relative_to(project)
+        except ValueError as exc:
+            raise CommandError(f"编辑质量文件不能越出项目目录：{relative_value}") from exc
+        return target
+
+    for pointer, filename in (
+        ("editorial_policy", "editorial-policy.json"),
+        ("editorial_reviews", "editorial-reviews.json"),
+    ):
+        existing_pointer = files.get(pointer)
+        relative = existing_pointer or filename
+        if not existing_pointer:
+            changed = True
+            if pointer == "editorial_policy":
+                policy_added = True
+        target = project_target(relative)
+        if not target.is_file():
+            source = template / filename
+            if not source.is_file():
+                raise CommandError(f"缺少编辑质量模板：{source}")
+            target.parent.mkdir(parents=True, exist_ok=True)
+            data = _replace_project_id(read_json(source), project_id)
+            atomic_write_json(target, data)
+            created.append(str(target.relative_to(project)))
+            changed = True
+            if pointer == "editorial_policy":
+                policy_added = True
+        files[pointer] = str(relative)
+
+    report_target = project_target("editorial/quality-report.md")
+    if not report_target.is_file():
+        report_source = template / "editorial" / "quality-report.md"
+        report_target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(report_source, report_target)
+        created.append(str(report_target.relative_to(project)))
+        changed = True
+
+    now = utc_now()
+    release = manifest.get("release", {}) if isinstance(manifest.get("release"), dict) else {}
+    if policy_added and release.get("status") == "frozen":
+        release.update(
+            status="invalidated",
+            invalidated_at=now,
+            invalidated_reason="新增个人表达与平台风格策略，需重新审校并冻结",
+        )
+    if changed:
+        manifest["updated_at"] = now
+        atomic_write_json(manifest_path, manifest)
+    return {
+        "status": "initialized" if changed else "current",
+        "project": str(project),
+        "created": created,
+        "next": "补全个人表达档案和逐交付物审校记录，再运行 strict 校验并重新冻结。",
+    }

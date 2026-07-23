@@ -10,6 +10,7 @@ import shutil
 import struct
 import subprocess
 import sys
+from difflib import SequenceMatcher
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
@@ -34,6 +35,7 @@ METRIC_COLLECTION_STATUSES = {"not_collected", "captured", "partial", "unavailab
 METRIC_SOURCES = {"unknown", "platform_api", "creator_backend", "public_page", "manual"}
 METRIC_COMPLETE_STATUSES = {"captured", "partial", "unavailable"}
 IRREVERSIBLE_ACTIONS = {"public_publish", "update_publication", "delete_publication", "external_sync"}
+GITHUB_PROMPT_URL = re.compile(r"^https?://(?:www\.)?(?:github\.com|raw\.githubusercontent\.com)/", re.IGNORECASE)
 
 PUBLIC_PATH_PATTERNS = [
     (re.compile(r"file://", re.IGNORECASE), "file URL"),
@@ -175,6 +177,10 @@ def meaningful_lines(text: str) -> Tuple[str, str]:
 
 def normalized(text: str) -> str:
     return text.replace("\r\n", "\n").replace("\r", "\n").strip()
+
+
+def is_http_url(value: Any) -> bool:
+    return bool(re.match(r"^https?://[^\s]+$", str(value or "").strip(), re.IGNORECASE))
 
 
 def has_resolvable_evidence(project: Path, evidence: Any) -> bool:
@@ -388,7 +394,124 @@ def check_prompt(project: Path, requirements: Dict[str, Any], report: Report) ->
     return text
 
 
-def check_deliverables(project: Path, requirements: Dict[str, Any], prompt_text: Optional[str], report: Report) -> None:
+def check_prompt_delivery_context(
+    project: Path,
+    requirements: Dict[str, Any],
+    report: Report,
+) -> Dict[str, Any]:
+    context = requirements.get("prompt_delivery_context")
+    if not isinstance(context, dict):
+        if requirements.get("schema_version") in {"1.2", "1.3"}:
+            report.fail(
+                "prompt_delivery.context_missing",
+                "1.2 及以上内容项目必须记录内容来源、提示词阈值、现成公开载体和外部托管授权",
+                "content-requirements.json",
+            )
+        return {}
+
+    urls = context.get("existing_public_urls", [])
+    if not isinstance(urls, list):
+        urls = []
+    for url in urls:
+        if not is_http_url(url):
+            report.fail("prompt_delivery.existing_url", "现成公开载体不是 HTTP(S) 链接", "content-requirements.json")
+    if not has_resolvable_evidence(project, context.get("decision_evidence")):
+        report.fail(
+            "prompt_delivery.decision_evidence",
+            "提示词载体决定缺少可解析证据",
+            "content-requirements.json",
+        )
+    else:
+        report.ok("prompt_delivery.context", "提示词载体上下文和决定证据已记录", "content-requirements.json")
+
+    if requirements.get("schema_version") == "1.3":
+        confirmation = context.get("carrier_confirmation")
+        if not isinstance(confirmation, dict):
+            report.fail(
+                "prompt_delivery.carrier_confirmation_missing",
+                "1.3 内容项目必须在自动检测后记录人工确认结果",
+                "content-requirements.json",
+            )
+            return context
+        status = confirmation.get("status")
+        if status == "pending":
+            report.fail(
+                "prompt_delivery.carrier_confirmation_pending",
+                "仓库检测结果尚未经过人工确认；不能据此使用或放弃 GitHub 链接",
+                "content-requirements.json",
+            )
+            return context
+        if not has_resolvable_evidence(project, confirmation.get("evidence")):
+            report.fail(
+                "prompt_delivery.carrier_confirmation_evidence",
+                "仓库使用决定缺少可解析的人工确认记录",
+                "content-requirements.json",
+            )
+        if not valid_iso_datetime(confirmation.get("confirmed_at")):
+            report.fail(
+                "prompt_delivery.carrier_confirmation_time",
+                "仓库使用决定缺少有效确认时间",
+                "content-requirements.json",
+            )
+
+        origin = context.get("content_origin")
+        urls = context.get("existing_public_urls", []) if isinstance(context.get("existing_public_urls"), list) else []
+        confirmed_url = confirmation.get("confirmed_url")
+        repository = confirmation.get("repository")
+        if status == "confirmed_existing":
+            if not confirmation.get("candidate_id"):
+                report.fail("prompt_delivery.carrier_candidate_id", "人工确认缺少检测候选编号", "content-requirements.json")
+            if not is_http_url(confirmed_url) or confirmed_url not in urls:
+                report.fail(
+                    "prompt_delivery.carrier_confirmed_url",
+                    "人工确认的提示词直达链接必须进入 existing_public_urls",
+                    "content-requirements.json",
+                )
+            if not isinstance(repository, dict):
+                report.fail("prompt_delivery.carrier_repository", "人工确认缺少 GitHub 仓库证据", "content-requirements.json")
+            else:
+                canonical = requirements.get("canonical_prompt")
+                canonical_sha256 = canonical.get("sha256") if isinstance(canonical, dict) else None
+                if repository.get("prompt_sha256") != canonical_sha256:
+                    report.fail(
+                        "prompt_delivery.carrier_prompt_sha256",
+                        "确认仓库中的提示词哈希与当前 canonical prompt 不一致",
+                        "content-requirements.json",
+                    )
+                else:
+                    report.ok("prompt_delivery.carrier_confirmed", "GitHub 提示词载体已检测并经人工确认", "content-requirements.json")
+        elif status == "confirmed_none":
+            if origin == "existing_project" and not confirmation.get("candidate_id"):
+                report.fail(
+                    "prompt_delivery.carrier_candidate_id",
+                    "现有项目确认不使用仓库载体时也必须绑定刚刚展示的检测候选编号",
+                    "content-requirements.json",
+                )
+            github_urls = [url for url in urls if isinstance(url, str) and GITHUB_PROMPT_URL.match(url)]
+            if github_urls or confirmed_url is not None or repository is not None:
+                report.fail(
+                    "prompt_delivery.carrier_none_conflict",
+                    "已确认本篇不使用 GitHub 载体，但仍残留 GitHub 提示词链接或仓库证据",
+                    "content-requirements.json",
+                )
+            else:
+                report.ok("prompt_delivery.carrier_none_confirmed", "已人工确认本篇不使用 GitHub 载体", "content-requirements.json")
+        else:
+            report.fail(
+                "prompt_delivery.carrier_confirmation_status",
+                f"未知的仓库人工确认状态：{status}",
+                "content-requirements.json",
+            )
+    return context
+
+
+def check_deliverables(
+    project: Path,
+    requirements: Dict[str, Any],
+    prompt_text: Optional[str],
+    delivery_context: Dict[str, Any],
+    report: Report,
+) -> None:
     deliverables = requirements.get("deliverables", [])
     if not isinstance(deliverables, list):
         report.fail("deliverables.type", "deliverables 必须是数组", "content-requirements.json")
@@ -421,6 +544,253 @@ def check_deliverables(project: Path, requirements: Dict[str, Any], prompt_text:
                 report.fail("deliverables.prompt_incomplete", "要求全文交付，但没有逐字包含 canonical prompt", relative)
             else:
                 report.ok("deliverables.prompt_complete", "已逐字包含完整提示词", relative)
+        if item.get("prompt_delivery") == "accessible_link":
+            access_url = item.get("prompt_access_url")
+            if not is_http_url(access_url):
+                report.fail(
+                    "prompt_delivery.access_url",
+                    "可访问链接交付必须填写直接定位完整提示词的 HTTP(S) 链接",
+                    "content-requirements.json",
+                )
+                continue
+            existing_urls = {
+                str(value).strip() for value in delivery_context.get("existing_public_urls", [])
+                if is_http_url(value)
+            }
+            if access_url not in existing_urls and not delivery_context.get("external_hosting_authorized", False):
+                report.fail(
+                    "prompt_delivery.external_hosting_authorization",
+                    "提示词链接不属于已记录的现成公开载体，且没有新建外部载体授权",
+                    "content-requirements.json",
+                )
+            else:
+                report.ok("prompt_delivery.accessible_link", "完整提示词使用已确认的直接链接交付", access_url)
+
+
+def _platform_key(value: Any) -> str:
+    return str(value or "").strip().casefold()
+
+
+def _editorial_severity(report: Report):
+    return report.fail if report.strict or any(action in IRREVERSIBLE_ACTIONS for action in report.actions) else report.warn
+
+
+def check_editorial_policy(
+    project: Path,
+    requirements: Dict[str, Any],
+    policy: Optional[Dict[str, Any]],
+    policy_path: Optional[Path],
+    report: Report,
+) -> Tuple[Optional[str], Dict[str, Dict[str, Any]]]:
+    severity = _editorial_severity(report)
+    if policy is None or policy_path is None:
+        severity("editorial.policy_missing", "缺少读者语言与平台风格策略；运行 editorial-init 后补全", "project-manifest.json")
+        return None, {}
+    if policy.get("project_id") != report.project_id:
+        report.fail("editorial.project_id", "editorial-policy 的 project_id 不一致", policy_path.name)
+    policy_digest = sha256(policy_path)
+    author = policy.get("author_voice", {}) if isinstance(policy.get("author_voice"), dict) else {}
+    if author.get("status") != "verified":
+        severity("editorial.author_voice", "个人表达档案尚未验证", policy_path.name)
+    else:
+        profile = author.get("profile", {}) if isinstance(author.get("profile"), dict) else {}
+        required_profile_fields = ("point_of_view", "sentence_rhythm", "preferred_vocabulary", "stance_markers", "avoid")
+        empty = [field for field in required_profile_fields if not profile.get(field)]
+        if empty:
+            report.fail("editorial.author_profile", f"已验证的个人表达档案仍缺少：{', '.join(empty)}", policy_path.name)
+        if not has_resolvable_evidence(project, author.get("evidence")):
+            report.fail("editorial.author_evidence", "个人表达档案缺少可解析证据", policy_path.name)
+        samples = author.get("sample_paths", []) if isinstance(author.get("sample_paths"), list) else []
+        mode = author.get("mode")
+        minimum = 3 if mode == "writing_samples" else 1 if mode == "approved_content" else 0
+        if len(samples) < minimum:
+            report.fail("editorial.author_samples", f"{mode} 模式至少需要 {minimum} 个样本", policy_path.name)
+        if mode == "writing_samples" and len(samples) > 5:
+            report.warn("editorial.author_samples", "个人表达校准建议只使用 3–5 个明确认可的代表样本", policy_path.name)
+        for relative in samples:
+            if not resolve(project, relative).is_file():
+                report.fail("editorial.author_sample_missing", "个人表达样本不存在", relative)
+        if not any(issue["code"].startswith("editorial.author_") and issue["severity"] == "error" for issue in report.issues):
+            report.ok("editorial.author_verified", "个人表达档案和证据已验证", policy_path.name)
+
+    profiles = policy.get("platform_profiles", []) if isinstance(policy.get("platform_profiles"), list) else []
+    profile_ids = [item.get("id") for item in profiles if isinstance(item, dict)]
+    if len(profile_ids) != len(set(profile_ids)):
+        report.fail("editorial.profile_id", "平台档案 id 必须唯一", policy_path.name)
+    aliases: Dict[str, Dict[str, Any]] = {}
+    for profile in profiles:
+        if not isinstance(profile, dict):
+            continue
+        names = [profile.get("platform"), *profile.get("aliases", [])]
+        for name in names:
+            key = _platform_key(name)
+            if not key:
+                continue
+            if key in aliases and aliases[key].get("id") != profile.get("id"):
+                report.fail("editorial.profile_alias", f"平台别名重复：{name}", policy_path.name)
+            aliases[key] = profile
+
+    delivery_compatibility = {
+        "full_text": {"full_text"},
+        "prompt_cards": {"prompt_cards"},
+        "accessible_link": {"accessible_link"},
+        "prompt_cards_or_accessible_link": {"prompt_cards", "accessible_link"},
+        "adaptive": {"full_text", "prompt_cards", "accessible_link"},
+    }
+    for deliverable in requirements.get("deliverables", []):
+        if not isinstance(deliverable, dict) or not deliverable.get("platform"):
+            continue
+        platform = deliverable.get("platform")
+        profile = aliases.get(_platform_key(platform))
+        if profile is None:
+            severity("editorial.platform_profile", f"{platform} 没有独立平台风格档案", policy_path.name)
+            continue
+        expected = delivery_compatibility.get(profile.get("prompt_delivery"), set())
+        if deliverable.get("prompt_delivery") not in expected and deliverable.get("prompt_delivery") != "not_required":
+            report.fail(
+                "editorial.prompt_delivery",
+                f"{platform} 的交付方式 {deliverable.get('prompt_delivery')} 与平台档案 {profile.get('prompt_delivery')} 不一致",
+                policy_path.name,
+            )
+        else:
+            report.ok("editorial.platform_profile", f"{platform} 已绑定平台档案 {profile.get('id')}", policy_path.name)
+    return policy_digest, aliases
+
+
+def check_editorial_reviews(
+    project: Path,
+    requirements: Dict[str, Any],
+    reviews_data: Optional[Dict[str, Any]],
+    reviews_path: Optional[Path],
+    policy: Optional[Dict[str, Any]],
+    policy_digest: Optional[str],
+    profiles: Dict[str, Dict[str, Any]],
+    report: Report,
+) -> None:
+    severity = _editorial_severity(report)
+    if reviews_data is None or reviews_path is None:
+        severity("editorial.reviews_missing", "缺少逐交付物的读者语言与平台风格审校记录", "project-manifest.json")
+        return
+    if reviews_data.get("project_id") != report.project_id:
+        report.fail("editorial.review_project_id", "editorial-reviews 的 project_id 不一致", reviews_path.name)
+    reviews = reviews_data.get("reviews", []) if isinstance(reviews_data.get("reviews"), list) else []
+    review_ids = [item.get("id") for item in reviews if isinstance(item, dict)]
+    if len(review_ids) != len(reviews) or any(not value for value in review_ids) or len(set(review_ids)) != len(review_ids):
+        report.fail("editorial.review_id", "审校记录 id 必须非空且唯一", reviews_path.name)
+    by_deliverable: Dict[str, List[Dict[str, Any]]] = {}
+    for item in reviews:
+        if isinstance(item, dict):
+            by_deliverable.setdefault(str(item.get("deliverable_id") or ""), []).append(item)
+
+    rules = policy.get("quality_rules", {}) if isinstance(policy, dict) and isinstance(policy.get("quality_rules"), dict) else {}
+    threshold = rules.get("structural_rewrite_threshold", {}) if isinstance(rules.get("structural_rewrite_threshold"), dict) else {}
+    minimum_hits = int(threshold.get("minimum_pattern_hits", 5))
+    minimum_categories = int(threshold.get("minimum_category_hits", 3))
+    require_uniform = bool(threshold.get("require_uniform_structure", True))
+    text_kinds = {"master", "longform", "social", "video_script"}
+    for deliverable in requirements.get("deliverables", []):
+        if not isinstance(deliverable, dict) or not deliverable.get("required") or deliverable.get("kind") not in text_kinds:
+            continue
+        deliverable_id = str(deliverable.get("id") or "")
+        matches = by_deliverable.get(deliverable_id, [])
+        if not matches:
+            severity("editorial.review_missing", f"必需交付物 {deliverable_id} 没有审校记录", reviews_path.name)
+            continue
+        if len(matches) != 1:
+            report.fail("editorial.review_duplicate", f"交付物 {deliverable_id} 必须且只能有一条当前审校记录", reviews_path.name)
+            continue
+        review = matches[0]
+        issue_start = len(report.issues)
+        relative = deliverable.get("path")
+        content_path = resolve(project, relative) if relative else Path("__missing__")
+        if review.get("status") != "verified":
+            severity("editorial.review_status", f"交付物 {deliverable_id} 的审校状态不是 verified", reviews_path.name)
+        if not valid_iso_datetime(review.get("reviewed_at")) or not str(review.get("reviewer") or "").strip():
+            report.fail("editorial.review_identity", f"交付物 {deliverable_id} 缺少审校时间或审校者", reviews_path.name)
+        if content_path.is_file() and review.get("content_sha256") != sha256(content_path):
+            report.fail("editorial.review_content", f"交付物 {deliverable_id} 已在审校后变化", relative)
+        if policy_digest is None or review.get("policy_sha256") != policy_digest:
+            report.fail("editorial.review_policy", f"交付物 {deliverable_id} 没有绑定当前 editorial policy", reviews_path.name)
+        if not has_resolvable_evidence(project, review.get("evidence")):
+            report.fail("editorial.review_evidence", f"交付物 {deliverable_id} 缺少可解析审校证据", reviews_path.name)
+
+        platform = deliverable.get("platform")
+        if _platform_key(review.get("platform")) != _platform_key(platform):
+            report.fail("editorial.review_platform", f"交付物 {deliverable_id} 的审校平台与交付物不一致", reviews_path.name)
+        profile = profiles.get(_platform_key(platform)) if platform else None
+        if platform:
+            if profile is None or review.get("profile_id") != profile.get("id") or review.get("profile_version") != profile.get("version"):
+                report.fail("editorial.review_profile", f"交付物 {deliverable_id} 没有绑定当前平台档案", reviews_path.name)
+        elif review.get("profile_id") is not None or review.get("profile_version") is not None:
+            report.fail("editorial.review_profile", f"非平台母稿 {deliverable_id} 不应绑定平台档案", reviews_path.name)
+
+        checks = review.get("checks", {}) if isinstance(review.get("checks"), dict) else {}
+        for check in ("fact_fidelity", "process_completeness", "ai_trace", "author_voice", "medium_fit"):
+            if checks.get(check) != "verified":
+                severity("editorial.review_check", f"交付物 {deliverable_id} 的 {check} 未通过", reviews_path.name)
+        expected_prompt = "not_applicable" if deliverable.get("prompt_delivery") == "not_required" else "verified"
+        if checks.get("prompt_integrity") != expected_prompt:
+            severity("editorial.review_check", f"交付物 {deliverable_id} 的 prompt_integrity 应为 {expected_prompt}", reviews_path.name)
+        expected_platform = "verified" if platform else "not_applicable"
+        if checks.get("platform_fit") != expected_platform:
+            severity("editorial.review_check", f"交付物 {deliverable_id} 的 platform_fit 应为 {expected_platform}", reviews_path.name)
+
+        audit = review.get("ai_audit", {}) if isinstance(review.get("ai_audit"), dict) else {}
+        threshold_hit = (
+            int(audit.get("pattern_hits", 0)) >= minimum_hits
+            and int(audit.get("category_hits", 0)) >= minimum_categories
+            and (not require_uniform or bool(audit.get("uniform_structure")))
+        )
+        if threshold_hit and review.get("rewrite_mode") != "structural":
+            report.fail("editorial.rewrite_mode", f"交付物 {deliverable_id} 已达到结构重写阈值，不能只做词语修补", reviews_path.name)
+        if not any(issue["severity"] in {"warning", "error"} for issue in report.issues[issue_start:]):
+            report.ok("editorial.review_verified", f"交付物 {deliverable_id} 的审校记录有效", reviews_path.name)
+
+
+def check_platform_differentiation(
+    project: Path,
+    requirements: Dict[str, Any],
+    prompt_text: Optional[str],
+    report: Report,
+) -> None:
+    rows: List[Tuple[str, str, str]] = []
+    prompt = normalized(prompt_text) if prompt_text else ""
+    for deliverable in requirements.get("deliverables", []):
+        if not isinstance(deliverable, dict) or not deliverable.get("required") or not deliverable.get("platform"):
+            continue
+        if deliverable.get("kind") not in {"longform", "social", "video_script", "master"}:
+            continue
+        relative = deliverable.get("path")
+        path = resolve(project, relative) if relative else Path("__missing__")
+        if not path.is_file():
+            continue
+        try:
+            text = normalized(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError):
+            continue
+        if prompt:
+            text = text.replace(prompt, "")
+        comparison = re.sub(r"[\W_]+", "", text, flags=re.UNICODE).casefold()
+        if comparison:
+            rows.append((str(deliverable.get("platform")), str(deliverable.get("id")), comparison))
+    severity = _editorial_severity(report)
+    for index, (platform_a, id_a, text_a) in enumerate(rows):
+        for platform_b, id_b, text_b in rows[index + 1:]:
+            if _platform_key(platform_a) == _platform_key(platform_b):
+                continue
+            ratio = SequenceMatcher(None, text_a, text_b, autojunk=False).ratio()
+            if ratio >= 0.92:
+                severity(
+                    "editorial.platform_similarity",
+                    f"平台稿 {id_a}/{platform_a} 与 {id_b}/{platform_b} 去除完整提示词后仍有 {ratio:.0%} 相似度，疑似机械复制",
+                    "content-requirements.json",
+                )
+            else:
+                report.ok(
+                    "editorial.platform_differentiated",
+                    f"平台稿 {id_a}/{platform_a} 与 {id_b}/{platform_b} 已形成结构差异（相似度 {ratio:.0%}）",
+                    "content-requirements.json",
+                )
 
 
 def check_story_coverage(
@@ -473,7 +843,13 @@ def check_story_coverage(
             report.fail("story.stage_coverage", f"story_coverage 必须且只能覆盖一次：{stage}", "content-requirements.json")
 
 
-def check_prompt_card_sets(project: Path, requirements: Dict[str, Any], report: Report) -> None:
+def check_prompt_card_sets(
+    project: Path,
+    requirements: Dict[str, Any],
+    prompt_text: Optional[str],
+    delivery_context: Dict[str, Any],
+    report: Report,
+) -> None:
     prompt = requirements.get("canonical_prompt", {}) if isinstance(requirements.get("canonical_prompt"), dict) else {}
     sets = requirements.get("prompt_card_sets")
     if not isinstance(sets, list):
@@ -494,6 +870,20 @@ def check_prompt_card_sets(project: Path, requirements: Dict[str, Any], report: 
             continue
         pages = card_set.get("pages", [])
         total = card_set.get("total_pages")
+        maximum_pages = delivery_context.get("max_prompt_card_pages")
+        maximum_characters = delivery_context.get("short_prompt_max_characters")
+        if isinstance(maximum_pages, int) and isinstance(total, int) and total > maximum_pages:
+            report.fail(
+                "prompt_cards.page_limit",
+                f"{platform} 提示词图片共 {total} 页，超过项目上限 {maximum_pages} 页；改用正文全文或已确认的直接链接",
+                "content-requirements.json",
+            )
+        if isinstance(maximum_characters, int) and prompt_text is not None and len(prompt_text) > maximum_characters:
+            report.fail(
+                "prompt_cards.prompt_too_long",
+                f"{platform} 提示词共 {len(prompt_text)} 字符，超过图片交付阈值 {maximum_characters}；改用正文全文或已确认的直接链接",
+                "content-requirements.json",
+            )
         page_numbers = [item.get("page") for item in pages if isinstance(item, dict)]
         if not isinstance(total, int) or page_numbers != list(range(1, total + 1)):
             report.fail("prompt_cards.sequence", f"{platform} 提示词图片页码不连续或总页数不一致", "content-requirements.json")
@@ -1128,12 +1518,18 @@ def validate(
     metrics_path = resolve(project, files.get("metrics", "metrics.json"))
     handoff_path = resolve(project, files.get("handoff_state", "handoff-state.json"))
     receipts_path = resolve(project, files.get("publication_receipts", "publication-receipts.json"))
+    editorial_policy_relative = files.get("editorial_policy")
+    editorial_reviews_relative = files.get("editorial_reviews")
+    editorial_policy_path = resolve(project, editorial_policy_relative) if editorial_policy_relative else None
+    editorial_reviews_path = resolve(project, editorial_reviews_relative) if editorial_reviews_relative else None
     decisions = load_json(decision_path, report, "decisions")
     requirements = load_json(requirements_path, report, "requirements")
     platform_data = load_json(platform_path, report, "platforms")
     metrics = load_json(metrics_path, report, "metrics")
     handoff = load_json(handoff_path, report, "handoff")
     receipts = load_json(receipts_path, report, "receipts")
+    editorial_policy = load_json(editorial_policy_path, report, "editorial_policy") if editorial_policy_path else None
+    editorial_reviews = load_json(editorial_reviews_path, report, "editorial_reviews") if editorial_reviews_path else None
     checksums = load_json(resolve(project, files.get("checksums", "checksums.json")), report, "checksums")
     check_schema(decisions, "decision-log.schema.json", report, "decisions", decision_path.name)
     check_schema(requirements, "content-requirements.schema.json", report, "requirements", requirements_path.name)
@@ -1141,14 +1537,25 @@ def validate(
     check_schema(metrics, "metrics.schema.json", report, "metrics", metrics_path.name)
     check_schema(handoff, "handoff-state.schema.json", report, "handoff", handoff_path.name)
     check_schema(receipts, "publication-receipts.schema.json", report, "receipts", receipts_path.name)
+    if editorial_policy_path:
+        check_schema(editorial_policy, "editorial-policy.schema.json", report, "editorial_policy", editorial_policy_path.name)
+    if editorial_reviews_path:
+        check_schema(editorial_reviews, "editorial-reviews.schema.json", report, "editorial_reviews", editorial_reviews_path.name)
     check_decisions(decisions, project_id, report)
     if requirements:
         if requirements.get("project_id") != project_id:
             report.fail("requirements.project_id", "content-requirements 的 project_id 不一致", "content-requirements.json")
         prompt_text = check_prompt(project, requirements, report)
-        check_deliverables(project, requirements, prompt_text, report)
+        delivery_context = check_prompt_delivery_context(project, requirements, report)
+        check_deliverables(project, requirements, prompt_text, delivery_context, report)
+        policy_digest, profiles = check_editorial_policy(project, requirements, editorial_policy, editorial_policy_path, report)
+        check_editorial_reviews(
+            project, requirements, editorial_reviews, editorial_reviews_path,
+            editorial_policy, policy_digest, profiles, report,
+        )
+        check_platform_differentiation(project, requirements, prompt_text, report)
         check_story_coverage(project, manifest, requirements, decisions, report)
-        check_prompt_card_sets(project, requirements, report)
+        check_prompt_card_sets(project, requirements, prompt_text, delivery_context, report)
         check_media(project, requirements, report)
     check_platforms(platform_data, project_id, report)
     release_digest = check_release(project, manifest, requirements, decisions, report)

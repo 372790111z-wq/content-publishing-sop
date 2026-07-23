@@ -73,6 +73,8 @@ class ValidatorTests(unittest.TestCase):
                 "handoff": "HANDOFF.md",
                 "handoff_state": "handoff-state.json",
                 "publication_receipts": "publication-receipts.json",
+                "editorial_policy": "editorial-policy.json",
+                "editorial_reviews": "editorial-reviews.json",
             },
             "authorization": {
                 "local_changes": True,
@@ -112,7 +114,7 @@ class ValidatorTests(unittest.TestCase):
             "events": events,
         })
         write_json(project / "content-requirements.json", {
-            "schema_version": "1.1",
+            "schema_version": "1.3",
             "project_id": "fixture-project",
             "required_story_stages": REQUIRED_STAGES,
             "story_coverage": coverage,
@@ -126,12 +128,29 @@ class ValidatorTests(unittest.TestCase):
                 "last_line": "最后一行",
                 "anchors": ["关键锚点"],
             },
+            "prompt_delivery_context": {
+                "content_origin": "experience_share",
+                "short_prompt_max_characters": 1800,
+                "max_prompt_card_pages": 2,
+                "existing_public_urls": [],
+                "external_hosting_authorized": False,
+                "decision_evidence": ["decision-log.json#event-09"],
+                "carrier_confirmation": {
+                    "status": "confirmed_none",
+                    "candidate_id": None,
+                    "confirmed_url": None,
+                    "confirmed_at": "2026-07-20T00:00:00+08:00",
+                    "evidence": ["decision-log.json#event-09"],
+                    "repository": None,
+                },
+            },
             "deliverables": [{
                 "id": "master",
                 "kind": "master",
                 "path": "content/master.md",
                 "required": True,
                 "prompt_delivery": "full_text",
+                "prompt_access_url": None,
                 "platform": None,
             }],
             "prompt_card_sets": [],
@@ -189,6 +208,87 @@ class ValidatorTests(unittest.TestCase):
         })
         write_json(project / "publication-receipts.json", {
             "schema_version": "1.0", "project_id": "fixture-project", "receipts": [],
+        })
+        write_json(project / "editorial-policy.json", {
+            "schema_version": "1.0",
+            "project_id": "fixture-project",
+            "author_voice": {
+                "status": "verified",
+                "mode": "project_context",
+                "sample_paths": [],
+                "evidence": ["decision-log.json#event-04"],
+                "profile": {
+                    "summary": "测试用个人表达档案",
+                    "point_of_view": ["只写有证据的判断"],
+                    "sentence_rhythm": ["长短句交替"],
+                    "preferred_vocabulary": ["问题", "证据"],
+                    "stance_markers": ["说明采用方案的理由"],
+                    "avoid": ["夸张结论"],
+                },
+            },
+            "platform_profiles": [{
+                "id": "example-v1",
+                "platform": "example",
+                "aliases": ["示例平台"],
+                "version": "2026-07",
+                "narrative_role": "测试实践者",
+                "audience": "测试读者",
+                "title_rules": ["准确"],
+                "opening_rules": ["直接"],
+                "structure_rules": ["完整"],
+                "tone_rules": ["克制"],
+                "media_rules": ["一致"],
+                "interaction_rules": ["可复用"],
+                "avoid": ["夸张"],
+                "prompt_delivery": "adaptive",
+            }],
+            "quality_rules": {
+                "preserve": ["事实", "完整提示词"],
+                "review_checks": [
+                    "fact_fidelity", "process_completeness", "prompt_integrity", "ai_trace",
+                    "author_voice", "platform_fit", "medium_fit",
+                ],
+                "structural_rewrite_threshold": {
+                    "minimum_pattern_hits": 5,
+                    "minimum_category_hits": 3,
+                    "require_uniform_structure": True,
+                },
+                "optional_providers": ["humanizer-zh"],
+            },
+        })
+        (project / "editorial").mkdir()
+        (project / "editorial" / "quality-report.md").write_text(
+            "# QA\n\n## review-master\n\n逐项检查通过。\n", encoding="utf-8"
+        )
+        write_json(project / "editorial-reviews.json", {
+            "schema_version": "1.0",
+            "project_id": "fixture-project",
+            "reviews": [{
+                "id": "review-master",
+                "deliverable_id": "master",
+                "platform": None,
+                "status": "verified",
+                "reviewed_at": "2026-07-20T00:00:00+08:00",
+                "reviewer": "fixture-editor",
+                "providers": ["local-policy"],
+                "content_sha256": hashlib.sha256((project / "content" / "master.md").read_bytes()).hexdigest(),
+                "policy_sha256": hashlib.sha256((project / "editorial-policy.json").read_bytes()).hexdigest(),
+                "profile_id": None,
+                "profile_version": None,
+                "rewrite_mode": "targeted",
+                "ai_audit": {"pattern_hits": 2, "category_hits": 2, "uniform_structure": False},
+                "checks": {
+                    "fact_fidelity": "verified",
+                    "process_completeness": "verified",
+                    "prompt_integrity": "verified",
+                    "ai_trace": "verified",
+                    "author_voice": "verified",
+                    "platform_fit": "not_applicable",
+                    "medium_fit": "verified",
+                },
+                "findings": [],
+                "evidence": ["editorial/quality-report.md#review-master"],
+            }],
         })
         self.freeze(project)
         return project
@@ -332,6 +432,96 @@ class ValidatorTests(unittest.TestCase):
             self.assertTrue(any(issue["code"] == "prompt.sha256" for issue in result["issues"]))
             self.assertTrue(any(issue["code"] == "release.digest" for issue in result["issues"]))
 
+    def test_editorial_review_detects_content_changed_after_review(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            project = self.make_project(Path(directory))
+            master = project / "content" / "master.md"
+            master.write_text(master.read_text(encoding="utf-8") + "\n审校后新增。\n", encoding="utf-8")
+            result = validate(project)
+            self.assertTrue(any(issue["code"] == "editorial.review_content" for issue in result["issues"]))
+
+    def test_editorial_structural_rewrite_threshold_is_enforced(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            project = self.make_project(Path(directory))
+            reviews = read_json(project / "editorial-reviews.json")
+            reviews["reviews"][0]["ai_audit"] = {
+                "pattern_hits": 8, "category_hits": 4, "uniform_structure": True,
+            }
+            reviews["reviews"][0]["rewrite_mode"] = "targeted"
+            write_json(project / "editorial-reviews.json", reviews)
+            result = validate(project)
+            self.assertTrue(any(issue["code"] == "editorial.rewrite_mode" for issue in result["issues"]))
+
+    def test_platform_deliverable_requires_matching_profile_review(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            project = self.make_project(Path(directory))
+            requirements = read_json(project / "content-requirements.json")
+            requirements["deliverables"][0]["platform"] = "example"
+            write_json(project / "content-requirements.json", requirements)
+            reviews = read_json(project / "editorial-reviews.json")
+            reviews["reviews"][0].update(
+                platform="example",
+                profile_id="wrong-profile",
+                profile_version="2026-07",
+            )
+            reviews["reviews"][0]["checks"]["platform_fit"] = "verified"
+            write_json(project / "editorial-reviews.json", reviews)
+            self.freeze(project)
+            result = validate(project)
+            self.assertTrue(any(issue["code"] == "editorial.review_profile" for issue in result["issues"]))
+
+    def test_near_identical_platform_variants_are_flagged(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            project = self.make_project(Path(directory))
+            master = project / "content" / "master.md"
+            second = project / "content" / "second.md"
+            second.write_bytes(master.read_bytes())
+
+            requirements = read_json(project / "content-requirements.json")
+            requirements["deliverables"][0]["platform"] = "example"
+            requirements["deliverables"].append({
+                "id": "second",
+                "kind": "longform",
+                "path": "content/second.md",
+                "required": True,
+                "prompt_delivery": "full_text",
+                "platform": "example-2",
+            })
+            write_json(project / "content-requirements.json", requirements)
+
+            policy = read_json(project / "editorial-policy.json")
+            second_profile = json.loads(json.dumps(policy["platform_profiles"][0]))
+            second_profile.update(id="example-2-v1", platform="example-2", aliases=[])
+            policy["platform_profiles"].append(second_profile)
+            write_json(project / "editorial-policy.json", policy)
+            policy_hash = hashlib.sha256((project / "editorial-policy.json").read_bytes()).hexdigest()
+
+            report_path = project / "editorial" / "quality-report.md"
+            report_path.write_text(report_path.read_text(encoding="utf-8") + "\n## review-second\n\n检查通过。\n", encoding="utf-8")
+            reviews = read_json(project / "editorial-reviews.json")
+            first = reviews["reviews"][0]
+            first.update(
+                platform="example",
+                profile_id="example-v1",
+                profile_version="2026-07",
+                policy_sha256=policy_hash,
+            )
+            first["checks"]["platform_fit"] = "verified"
+            second_review = json.loads(json.dumps(first))
+            second_review.update(
+                id="review-second",
+                deliverable_id="second",
+                platform="example-2",
+                profile_id="example-2-v1",
+                content_sha256=hashlib.sha256(second.read_bytes()).hexdigest(),
+                evidence=["editorial/quality-report.md#review-second"],
+            )
+            reviews["reviews"].append(second_review)
+            write_json(project / "editorial-reviews.json", reviews)
+            self.freeze(project)
+            result = validate(project)
+            self.assertTrue(any(issue["code"] == "editorial.platform_similarity" for issue in result["issues"]))
+
     def test_verified_reader_without_evidence_is_blocked(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             project = self.make_project(Path(directory))
@@ -349,6 +539,164 @@ class ValidatorTests(unittest.TestCase):
             self.freeze(project)
             result = validate(project)
             self.assertTrue(any(issue["code"] == "prompt_cards.missing_set" for issue in result["issues"]))
+
+    def test_experience_share_short_prompt_does_not_require_public_url(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            project = self.make_project(Path(directory))
+            result = validate(project)
+            self.assertFalse(any(issue["code"].startswith("prompt_delivery.") and issue["severity"] == "error" for issue in result["issues"]))
+
+    def test_carrier_detection_requires_human_confirmation(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            project = self.make_project(Path(directory))
+            requirements = read_json(project / "content-requirements.json")
+            requirements["prompt_delivery_context"]["carrier_confirmation"] = {
+                "status": "pending",
+                "candidate_id": "0" * 64,
+                "confirmed_url": None,
+                "confirmed_at": None,
+                "evidence": [],
+                "repository": None,
+            }
+            write_json(project / "content-requirements.json", requirements)
+            self.freeze(project)
+            result = validate(project)
+            self.assertTrue(any(
+                issue["code"] == "prompt_delivery.carrier_confirmation_pending"
+                for issue in result["issues"]
+            ))
+
+    def test_existing_project_can_confirm_not_to_use_repository_carrier(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            project = self.make_project(Path(directory))
+            requirements = read_json(project / "content-requirements.json")
+            requirements["prompt_delivery_context"]["content_origin"] = "existing_project"
+            requirements["prompt_delivery_context"]["carrier_confirmation"] = {
+                "status": "confirmed_none",
+                "candidate_id": "0" * 64,
+                "confirmed_url": None,
+                "confirmed_at": "2026-07-22T10:00:00+08:00",
+                "evidence": ["decision-log.json#event-09"],
+                "repository": None,
+            }
+            requirements["prompt_delivery_context"]["existing_public_urls"] = ["https://docs.example.com/prompt"]
+            requirements["prompt_delivery_context"]["external_hosting_authorized"] = True
+            write_json(project / "content-requirements.json", requirements)
+            self.freeze(project)
+            result = validate(project)
+            self.assertFalse(any(
+                issue["code"].startswith("prompt_delivery.carrier_") and issue["severity"] == "error"
+                for issue in result["issues"]
+            ))
+
+    def test_existing_project_confirm_none_requires_candidate_id(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            project = self.make_project(Path(directory))
+            requirements = read_json(project / "content-requirements.json")
+            requirements["prompt_delivery_context"]["content_origin"] = "existing_project"
+            requirements["prompt_delivery_context"]["carrier_confirmation"]["candidate_id"] = None
+            write_json(project / "content-requirements.json", requirements)
+            self.freeze(project)
+            result = validate(project)
+            self.assertTrue(any(
+                issue["code"] == "prompt_delivery.carrier_candidate_id"
+                for issue in result["issues"]
+            ))
+
+    def test_confirm_none_rejects_github_prompt_url_residue(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            project = self.make_project(Path(directory))
+            requirements = read_json(project / "content-requirements.json")
+            requirements["prompt_delivery_context"]["existing_public_urls"] = [
+                "https://github.com/example/project/blob/main/prompt.md"
+            ]
+            write_json(project / "content-requirements.json", requirements)
+            self.freeze(project)
+            result = validate(project)
+            self.assertTrue(any(
+                issue["code"] == "prompt_delivery.carrier_none_conflict"
+                for issue in result["issues"]
+            ))
+
+    def test_accessible_link_requires_existing_carrier_or_external_hosting_authorization(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            project = self.make_project(Path(directory))
+            requirements = read_json(project / "content-requirements.json")
+            requirements["deliverables"][0].update(
+                prompt_delivery="accessible_link",
+                prompt_access_url="https://example.com/prompt.md",
+            )
+            write_json(project / "content-requirements.json", requirements)
+            self.freeze(project)
+            result = validate(project)
+            self.assertTrue(any(
+                issue["code"] == "prompt_delivery.external_hosting_authorization"
+                for issue in result["issues"]
+            ))
+
+    def test_accessible_link_can_reuse_existing_public_carrier(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            project = self.make_project(Path(directory))
+            requirements = read_json(project / "content-requirements.json")
+            url = "https://example.com/prompt.md"
+            requirements["prompt_delivery_context"]["content_origin"] = "existing_project"
+            requirements["prompt_delivery_context"]["existing_public_urls"] = [url]
+            requirements["prompt_delivery_context"]["carrier_confirmation"] = {
+                "status": "confirmed_existing",
+                "candidate_id": "1" * 64,
+                "confirmed_url": url,
+                "confirmed_at": "2026-07-22T10:00:00+08:00",
+                "evidence": ["decision-log.json#event-09"],
+                "repository": {
+                    "provider": "github",
+                    "slug": "example/project",
+                    "remote_url": "https://github.com/example/project.git",
+                    "branch": "main",
+                    "commit": "2" * 40,
+                    "prompt_path": "canonical-prompt.md",
+                    "prompt_sha256": requirements["canonical_prompt"]["sha256"],
+                },
+            }
+            requirements["deliverables"][0].update(
+                prompt_delivery="accessible_link",
+                prompt_access_url=url,
+            )
+            write_json(project / "content-requirements.json", requirements)
+            self.freeze(project)
+            result = validate(project)
+            self.assertFalse(any(
+                issue["code"].startswith("prompt_delivery.") and issue["severity"] == "error"
+                for issue in result["issues"]
+            ))
+
+    def test_prompt_card_page_limit_blocks_image_flood(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            project = self.make_project(Path(directory))
+            requirements = read_json(project / "content-requirements.json")
+            requirements["deliverables"][0].update(prompt_delivery="prompt_cards", platform="example")
+            requirements["prompt_card_sets"] = [{
+                "id": "example-prompt-cards",
+                "platform": "example",
+                "canonical_prompt_sha256": requirements["canonical_prompt"]["sha256"],
+                "total_pages": 3,
+                "first_line": "第一行",
+                "last_line": "最后一行",
+                "verification_status": "verified",
+                "verification_evidence": ["decision-log.json#event-09"],
+                "pages": [
+                    {
+                        "page": page,
+                        "image_path": f"media/prompt-{page:02d}-of-03.png",
+                        "image_sha256": "0" * 64,
+                        "sequence": page,
+                    }
+                    for page in range(1, 4)
+                ],
+            }]
+            write_json(project / "content-requirements.json", requirements)
+            self.freeze(project)
+            result = validate(project)
+            self.assertTrue(any(issue["code"] == "prompt_cards.page_limit" for issue in result["issues"]))
 
     def test_missing_schema_field_is_blocked(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

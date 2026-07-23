@@ -12,7 +12,7 @@ def _read_version() -> str:
         try:
             return metadata.version("content-publishing-sop")
         except metadata.PackageNotFoundError:
-            return "0.2.0"
+            return "0.3.0"
 
 
 __version__ = _read_version()

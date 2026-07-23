@@ -1,8 +1,8 @@
 window.CONTENT_SOP_DATA = {
   "dashboard_schema_version": "1.4",
   "schema_version": "1.0",
-  "generated_at": "2026-07-21T14:22:12.248449+00:00",
-  "source_digest": "0601b25e8bccea4468bb30bd725757b5f0c5a35c2296e558e7b1573e7a942b2a",
+  "generated_at": "2026-07-22T10:49:53.490935+00:00",
+  "source_digest": "2ceba500d5c8e1b7c395c357c407a5906e5f396b17ca09ae5b6af8e75477bbbc",
   "registry": "../projects/registry.json",
   "summary": {
     "projects": 0,
@@ -97,6 +97,13 @@ window.CONTENT_SOP_DATA = {
         "status": "unknown",
         "summary": {},
         "gates": []
+      },
+      "editorial": {
+        "author_voice_status": "verified",
+        "author_voice_mode": "project_context",
+        "platform_profiles": 1,
+        "required_reviews": 1,
+        "verified_reviews": 1
       },
       "counts": {
         "decisions": 10,

@@ -1,0 +1,46 @@
+{
+  "schema_version": "1.0",
+  "project_id": "quickstart-demo",
+  "author_voice": {
+    "status": "verified",
+    "mode": "project_context",
+    "sample_paths": [],
+    "evidence": ["decision-log.json#event-feedback"],
+    "profile": {
+      "summary": "以清楚、克制的第一人称说明问题、取舍和验证结果。",
+      "point_of_view": ["只写项目证据能够支持的实践判断"],
+      "sentence_rhythm": ["长短句交替，步骤说明保持完整"],
+      "preferred_vocabulary": ["问题", "证据", "限制", "复用"],
+      "stance_markers": ["明确说明为什么采用或拒绝某个方案"],
+      "avoid": ["夸张意义", "虚构经历", "机械三段式", "通用积极结论"]
+    }
+  },
+  "platform_profiles": [
+    {
+      "id": "example-longform-v1",
+      "platform": "示例长文平台",
+      "aliases": ["example"],
+      "version": "2026-07",
+      "narrative_role": "用证据复盘已完成需求的实践者",
+      "audience": "希望理解并复用完整过程的读者",
+      "title_rules": ["标题说明具体问题和可复用结果"],
+      "opening_rules": ["开头交代为什么做以及旧方案哪里不够"],
+      "structure_rules": ["按问题、尝试、取舍、结果、限制和复用组织"],
+      "tone_rules": ["清楚克制，不伪造权威或个人经历"],
+      "media_rules": ["媒体必须解释正文中的真实内容"],
+      "interaction_rules": ["结尾给出可执行的复用入口"],
+      "avoid": ["标题党", "空洞结论", "本地路径"],
+      "prompt_delivery": "adaptive"
+    }
+  ],
+  "quality_rules": {
+    "preserve": ["事实", "数据", "命令和字段名", "链接", "决策理由", "已知限制", "完整一键提示词"],
+    "review_checks": ["fact_fidelity", "process_completeness", "prompt_integrity", "ai_trace", "author_voice", "platform_fit", "medium_fit"],
+    "structural_rewrite_threshold": {
+      "minimum_pattern_hits": 5,
+      "minimum_category_hits": 3,
+      "require_uniform_structure": true
+    },
+    "optional_providers": ["humanizer-zh", "dbs-ai-check"]
+  }
+}

@@ -43,7 +43,9 @@
         "master_content": {"type": "string"},
         "handoff": {"type": "string"},
         "handoff_state": {"type": "string"},
-        "publication_receipts": {"type": "string"}
+        "publication_receipts": {"type": "string"},
+        "editorial_policy": {"type": "string"},
+        "editorial_reviews": {"type": "string"}
       },
       "additionalProperties": false
     },

@@ -1,0 +1,126 @@
+{
+  "schema_version": "1.0",
+  "project_id": "replace-with-project-id",
+  "author_voice": {
+    "status": "pending",
+    "mode": "project_context",
+    "sample_paths": [],
+    "evidence": [],
+    "profile": {
+      "summary": "等待从用户认可的文章或当前项目反馈中建立表达档案。",
+      "point_of_view": [],
+      "sentence_rhythm": [],
+      "preferred_vocabulary": [],
+      "stance_markers": [],
+      "avoid": []
+    }
+  },
+  "platform_profiles": [
+    {
+      "id": "woshipm-practitioner-v1",
+      "platform": "人人都是产品经理",
+      "aliases": ["人人", "woshipm"],
+      "version": "2026-07",
+      "narrative_role": "有实施证据和明确判断的实践者",
+      "audience": "产品、运营和技术从业者",
+      "title_rules": ["点明实际问题和得到的可复用方案，不用夸张口号"],
+      "opening_rules": ["先说明为什么要做、旧做法哪里不够和这次解决了什么"],
+      "structure_rules": ["按问题、关键取舍、最终方案、验证结果和复用方法组织，不写成逐日流水账"],
+      "tone_rules": ["保留第一人称判断，但每个判断都能回到真实经历或证据"],
+      "media_rules": ["图片用于解释方案、结果和操作，不放与正文无关的装饰图"],
+      "interaction_rules": ["结尾给出读者可复用的方法或问题，不使用机械求赞话术"],
+      "avoid": ["纯中性汇报", "平台退稿申诉叙事", "开发日志式堆步骤", "没有证据的个人经历"],
+      "prompt_delivery": "adaptive"
+    },
+    {
+      "id": "zhihu-evidence-v1",
+      "platform": "知乎",
+      "aliases": ["zhihu"],
+      "version": "2026-07",
+      "narrative_role": "用事实和取舍回答具体问题的实践者",
+      "audience": "希望理解原理、方案和边界的读者",
+      "title_rules": ["使用真实问题或结论，不制造未经证明的颠覆性承诺"],
+      "opening_rules": ["先给问题边界和核心判断，再展开论证"],
+      "structure_rules": ["完整呈现证据、替代方案、取舍、结果和限制"],
+      "tone_rules": ["理性清楚，可以有立场，但不伪造专家身份或研究来源"],
+      "media_rules": ["图表和截图必须支持论证，并说明读者应该看什么"],
+      "interaction_rules": ["用可讨论的边界问题收尾，不使用模板化关注引导"],
+      "avoid": ["答非所问", "软广口吻", "无来源数字", "假身份背书", "只有结论没有推理"],
+      "prompt_delivery": "adaptive"
+    },
+    {
+      "id": "jianshu-tutorial-v1",
+      "platform": "简书",
+      "aliases": ["jianshu"],
+      "version": "2026-07",
+      "narrative_role": "把已验证过程整理成可复现教程的作者",
+      "audience": "希望按步骤复现并理解原因的读者",
+      "title_rules": ["明确主题、适用对象和可得到的结果"],
+      "opening_rules": ["交代使用场景、前置条件和文章能解决的问题"],
+      "structure_rules": ["章节清楚，步骤、命令、验证和常见问题相互对应"],
+      "tone_rules": ["平实解释技术概念，避免报告腔和故作口语"],
+      "media_rules": ["步骤图紧跟对应文字，代码和命令保持可复制"],
+      "interaction_rules": ["结尾给出复现检查清单和适用边界"],
+      "avoid": ["只贴代码不解释", "标题党", "过度分点", "本地文件名代替公开交付"],
+      "prompt_delivery": "adaptive"
+    },
+    {
+      "id": "xiaohongshu-experience-v1",
+      "platform": "小红书",
+      "aliases": ["xhs", "xiaohongshu"],
+      "version": "2026-07",
+      "narrative_role": "分享真实使用过程和判断的同路人",
+      "audience": "在移动端快速判断是否值得尝试的读者",
+      "title_rules": ["标题具体说明场景、问题或结果，避免空泛热词"],
+      "opening_rules": ["从一个真实场景或明确反差切入，不使用套话问候"],
+      "structure_rules": ["短段落和卡片化信息交替，每一段只承担一个主要信息"],
+      "tone_rules": ["像交流而不是广告；个人感受必须来自真实证据，不编造亲测"],
+      "media_rules": ["封面说明主题，过程图和方案图连续可读；提示词图不超过项目上限"],
+      "interaction_rules": ["提出与读者实际选择有关的问题，不诱导无意义互动"],
+      "avoid": ["表情和感叹号堆叠", "过期网感词", "虚假体验", "硬广催促", "把评论区作为提示词唯一入口"],
+      "prompt_delivery": "adaptive"
+    },
+    {
+      "id": "douyin-spoken-v1",
+      "platform": "抖音",
+      "aliases": ["douyin"],
+      "version": "2026-07",
+      "narrative_role": "边演示边解释结果的实践者",
+      "audience": "通过短视频快速理解问题和方案的观众",
+      "title_rules": ["标题和封面先交代具体问题或可见结果"],
+      "opening_rules": ["开头迅速说明遇到的问题、意外或最终收益，不做长铺垫"],
+      "structure_rules": ["按口播节拍组织：问题、关键转折、方案、证据、复用入口"],
+      "tone_rules": ["句子适合朗读，停顿自然，技术词保持准确"],
+      "media_rules": ["画面、字幕、口播和最终导出互相一致，避免长空白和无配音段"],
+      "interaction_rules": ["评论可以重复公开链接，但不能成为完整提示词的唯一入口"],
+      "avoid": ["机械金句", "连续排比", "虚假倒计时", "口播无法换气", "只有画面没有信息"],
+      "prompt_delivery": "adaptive"
+    },
+    {
+      "id": "bilibili-tutorial-v1",
+      "platform": "哔哩哔哩",
+      "aliases": ["B站", "bilibili"],
+      "version": "2026-07",
+      "narrative_role": "认真复盘并展示证据的教程作者",
+      "audience": "愿意观看完整过程并复现方案的观众",
+      "title_rules": ["说明问题、方案或实测结果，不让标题承诺超过视频内容"],
+      "opening_rules": ["快速交代背景、失败点和视频将验证的内容"],
+      "structure_rules": ["按背景、尝试、取舍、最终方案、演示、结果和限制分章"],
+      "tone_rules": ["有态度但不过度表演，技术判断同时给出证据和反例"],
+      "media_rules": ["字幕、配音、章节、画面和简介一致；最终文件完成音轨与空白检查"],
+      "interaction_rules": ["简介提供可访问链接，置顶评论可以重复并补充更新说明"],
+      "avoid": ["无脑吹捧", "故意水时长", "没有演示的口头结论", "未说明的商业植入", "只在评论区交付提示词"],
+      "prompt_delivery": "adaptive"
+    }
+  ],
+  "quality_rules": {
+    "preserve": ["事实", "数据", "命令和字段名", "链接", "决策理由", "已知限制", "完整一键提示词"],
+    "review_checks": ["fact_fidelity", "process_completeness", "prompt_integrity", "ai_trace", "author_voice", "platform_fit", "medium_fit"],
+    "structural_rewrite_threshold": {
+      "minimum_pattern_hits": 5,
+      "minimum_category_hits": 3,
+      "require_uniform_structure": true
+    },
+    "optional_providers": ["humanizer-zh", "dbs-ai-check", "其他宿主可调用的等价审校器"]
+  }
+}

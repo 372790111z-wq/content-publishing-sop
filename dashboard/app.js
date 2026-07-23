@@ -237,6 +237,9 @@
     });
     var publishAuthorized = publishGrants.length > 0;
     var releaseFrozen = project.release && project.release.status === "frozen";
+    var editorial = project.editorial || {};
+    var editorialReady = editorial.author_voice_status === "verified" &&
+      editorial.verified_reviews === editorial.required_reviews;
     var stats = [
       [project.counts.decisions, "决策节点"],
       [project.counts.deliverables, "内容文件"],
@@ -269,6 +272,12 @@
       "</div><div><strong>", releaseFrozen ? "内容版本已冻结" : "内容版本尚未冻结",
       "</strong><small>", escapeHtml((project.release && project.release.release_digest) || "没有 release digest"),
       "</small></div>", badge((project.release && project.release.status) || "unknown"), "</div>",
+      '<div class="authorization-banner"><div class="authorization-banner__icon">', editorialReady ? "✓" : "×",
+      "</div><div><strong>", editorialReady ? "个人表达与逐稿审校已完成" : "个人表达或逐稿审校未完成",
+      "</strong><small>个人表达：", escapeHtml(statusLabel(editorial.author_voice_status)),
+      "；平台档案：", escapeHtml(editorial.platform_profiles || 0),
+      "；逐稿审校：", escapeHtml(editorial.verified_reviews || 0), "/", escapeHtml(editorial.required_reviews || 0),
+      "</small></div>", badge(editorialReady ? "verified" : (editorial.author_voice_status || "unknown")), "</div>",
       '<div class="section-heading"><h3>平台状态</h3><span>作者后台状态 ≠ 公开读者结果</span></div>',
       renderPlatforms(project.platforms),
       '<div class="section-heading"><h3>文章覆盖的完整需求过程</h3><span>',

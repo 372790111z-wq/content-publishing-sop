@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "name": "content-publishing-sop",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "positioning": "cross-IDE content production, validation and publishing governance toolkit",
   "entry_boundary": "Only start after the source requirement is implemented, accepted, and the user later requests reusable content.",
   "entrypoints": {
@@ -15,6 +15,10 @@
   "implemented": [
     "project scaffolding and registry transaction",
     "content and canonical-prompt validation",
+    "read-only public GitHub prompt-carrier detection with separate human confirmation",
+    "author voice and per-platform editorial profiles",
+    "per-deliverable AI-trace, voice and platform-fit review evidence",
+    "editorial migration for existing projects",
     "release freeze",
     "scoped grants",
     "pending intents and receipt settlement",
