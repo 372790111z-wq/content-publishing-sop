@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from content_publishing.common import CommandError
 from content_publishing.transactions import create_grant, freeze_release, prepare_intents, settle_receipt
 
 
@@ -40,6 +41,34 @@ class TransactionTests(unittest.TestCase):
             manifest = json.loads((project / "project-manifest.json").read_text(encoding="utf-8"))
             self.assertEqual(manifest["status"], "published")
             self.assertEqual(manifest["authorization"]["grants"][0]["status"], "consumed")
+
+    def test_reader_verification_does_not_invent_accessible_link(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            project = Path(temporary) / "project"
+            shutil.copytree(ROOT / "examples" / "quickstart-demo", project)
+            platform_path = project / "platform-status.json"
+            platforms = json.loads(platform_path.read_text(encoding="utf-8"))
+            platforms["platforms"][0]["status"] = "ready"
+            platform_path.write_text(json.dumps(platforms, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            freeze_release(ROOT, str(project), "v1")
+            grant = create_grant(ROOT, str(project), "public_publish", ["example"], "用户确认最终内容和 example 平台")
+            prepared = prepare_intents(ROOT, str(project), grant["grant"]["id"])
+            platforms = json.loads(platform_path.read_text(encoding="utf-8"))
+            platforms["platforms"][0]["prompt_delivery"] = "unknown"
+            platform_path.write_text(json.dumps(platforms, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+            with self.assertRaisesRegex(CommandError, "必须明确记录实际提示词交付方式"):
+                settle_receipt(
+                    ROOT,
+                    str(project),
+                    prepared["receipts"][0]["id"],
+                    "succeeded",
+                    ["https://example.com/public"],
+                    "https://example.com/public",
+                    "demo-2",
+                    True,
+                )
 
 
 if __name__ == "__main__":

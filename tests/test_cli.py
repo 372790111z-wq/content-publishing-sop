@@ -9,7 +9,7 @@ from pathlib import Path
 
 from content_publishing.cli import _normalize_global_options, parser, main
 from content_publishing.installers import install_host, sync_managed_installations
-from content_publishing.projects import new_project
+from content_publishing.projects import initialize_editorial, new_project
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -21,7 +21,7 @@ class CliTests(unittest.TestCase):
         with contextlib.redirect_stdout(output):
             code = main(["version"])
         self.assertEqual(code, 0)
-        self.assertEqual(json.loads(output.getvalue())["version"], "0.2.0")
+        self.assertEqual(json.loads(output.getvalue())["version"], "0.3.0")
 
     def test_root_is_accepted_before_or_after_subcommand(self):
         before = parser().parse_args(_normalize_global_options(["--root", str(ROOT), "doctor"]))
@@ -57,6 +57,50 @@ class CliTests(unittest.TestCase):
             self.assertEqual(registry["projects"][0]["path"], "./hello-project")
             decisions = json.loads((root / "projects" / "hello-project" / "decision-log.json").read_text(encoding="utf-8"))
             self.assertEqual(len(decisions["events"]), 1)
+            project_path = root / "projects" / "hello-project"
+            self.assertTrue((project_path / "editorial-policy.json").is_file())
+            self.assertTrue((project_path / "editorial-reviews.json").is_file())
+            manifest = json.loads((project_path / "project-manifest.json").read_text(encoding="utf-8"))
+            self.assertEqual(manifest["files"]["editorial_policy"], "editorial-policy.json")
+
+    def test_editorial_init_backfills_legacy_project_without_overwrite(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            project = root / "projects" / "legacy-project"
+            project.mkdir(parents=True)
+            import shutil
+
+            shutil.copytree(ROOT / "templates" / "project", root / "templates" / "project")
+            manifest = json.loads((ROOT / "templates" / "project" / "project-manifest.json").read_text(encoding="utf-8"))
+            manifest["project_id"] = "legacy-project"
+            manifest["files"].pop("editorial_policy")
+            manifest["files"].pop("editorial_reviews")
+            (project / "project-manifest.json").write_text(json.dumps(manifest, ensure_ascii=False), encoding="utf-8")
+            result = initialize_editorial(root, "projects/legacy-project")
+            self.assertEqual(result["status"], "initialized")
+            self.assertTrue((project / "editorial-policy.json").is_file())
+            policy = json.loads((project / "editorial-policy.json").read_text(encoding="utf-8"))
+            self.assertEqual(policy["project_id"], "legacy-project")
+            manifest_after_first = (project / "project-manifest.json").read_bytes()
+            second = initialize_editorial(root, "projects/legacy-project")
+            self.assertEqual(second["status"], "current")
+            self.assertEqual((project / "project-manifest.json").read_bytes(), manifest_after_first)
+
+    def test_editorial_init_rejects_path_outside_project(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            project = root / "projects" / "unsafe-project"
+            project.mkdir(parents=True)
+            import shutil
+
+            shutil.copytree(ROOT / "templates" / "project", root / "templates" / "project")
+            manifest = json.loads((ROOT / "templates" / "project" / "project-manifest.json").read_text(encoding="utf-8"))
+            manifest["project_id"] = "unsafe-project"
+            manifest["files"]["editorial_policy"] = "../../outside-policy.json"
+            (project / "project-manifest.json").write_text(json.dumps(manifest, ensure_ascii=False), encoding="utf-8")
+            with self.assertRaisesRegex(Exception, "不能越出项目目录"):
+                initialize_editorial(root, "projects/unsafe-project")
+            self.assertFalse((root / "outside-policy.json").exists())
 
     def test_cursor_adapter_install_is_idempotent(self):
         with tempfile.TemporaryDirectory() as temporary:

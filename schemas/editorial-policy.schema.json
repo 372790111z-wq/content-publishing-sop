@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://local.content-sop/schemas/editorial-policy.schema.json",
+  "title": "Editorial voice and platform policy",
+  "type": "object",
+  "required": ["schema_version", "project_id", "author_voice", "platform_profiles", "quality_rules"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "project_id": {"type": "string"},
+    "author_voice": {
+      "type": "object",
+      "required": ["status", "mode", "sample_paths", "evidence", "profile"],
+      "properties": {
+        "status": {"enum": ["pending", "verified", "failed"]},
+        "mode": {"enum": ["writing_samples", "approved_content", "project_context"]},
+        "sample_paths": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "evidence": {"type": "array", "items": {"type": "string", "minLength": 1}},
+        "profile": {
+          "type": "object",
+          "required": ["summary", "point_of_view", "sentence_rhythm", "preferred_vocabulary", "stance_markers", "avoid"],
+          "properties": {
+            "summary": {"type": "string"},
+            "point_of_view": {"type": "array", "items": {"type": "string", "minLength": 1}},
+            "sentence_rhythm": {"type": "array", "items": {"type": "string", "minLength": 1}},
+            "preferred_vocabulary": {"type": "array", "items": {"type": "string", "minLength": 1}},
+            "stance_markers": {"type": "array", "items": {"type": "string", "minLength": 1}},
+            "avoid": {"type": "array", "items": {"type": "string", "minLength": 1}}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "platform_profiles": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "platform", "aliases", "version", "narrative_role", "audience", "title_rules", "opening_rules", "structure_rules", "tone_rules", "media_rules", "interaction_rules", "avoid", "prompt_delivery"],
+        "properties": {
+          "id": {"type": "string", "minLength": 1},
+          "platform": {"type": "string", "minLength": 1},
+          "aliases": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "version": {"type": "string", "minLength": 1},
+          "narrative_role": {"type": "string", "minLength": 1},
+          "audience": {"type": "string", "minLength": 1},
+          "title_rules": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "opening_rules": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "structure_rules": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "tone_rules": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "media_rules": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "interaction_rules": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "avoid": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+          "prompt_delivery": {"enum": ["full_text", "prompt_cards", "accessible_link", "prompt_cards_or_accessible_link", "adaptive"]}
+        },
+        "additionalProperties": false
+      }
+    },
+    "quality_rules": {
+      "type": "object",
+      "required": ["preserve", "review_checks", "structural_rewrite_threshold", "optional_providers"],
+      "properties": {
+        "preserve": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "review_checks": {"type": "array", "minItems": 7, "uniqueItems": true, "items": {"enum": ["fact_fidelity", "process_completeness", "prompt_integrity", "ai_trace", "author_voice", "platform_fit", "medium_fit"]}},
+        "structural_rewrite_threshold": {
+          "type": "object",
+          "required": ["minimum_pattern_hits", "minimum_category_hits", "require_uniform_structure"],
+          "properties": {
+            "minimum_pattern_hits": {"type": "integer", "minimum": 1},
+            "minimum_category_hits": {"type": "integer", "minimum": 1},
+            "require_uniform_structure": {"type": "boolean"}
+          },
+          "additionalProperties": false
+        },
+        "optional_providers": {"type": "array", "items": {"type": "string", "minLength": 1}}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

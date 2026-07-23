@@ -23,6 +23,8 @@ python3 tools/content_publishing.py --help
 ## 内容事务命令
 
 - `new-project`：复制模板、填入真实来源信息并更新注册表；
+- `editorial-init`：为旧项目无覆盖补齐个人表达、平台档案和逐稿审校文件；
+- `carrier detect / confirm / confirm-none`：只读检测公开 GitHub 提示词候选，并在独立人工确认后登记使用或不使用；
 - `freeze`：默认门禁通过后冻结 release digest；
 - `grant`：保存用户最终确认并创建范围化一次性授权；
 - `prepare`：整批动作门禁通过后创建全部 pending intents；
