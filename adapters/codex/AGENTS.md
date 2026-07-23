@@ -3,9 +3,9 @@
 处理内容生产、图文视频完整性、多平台适配或发布任务时：
 
 1. 读取 `content-publishing-sop/START-HERE.md`。
-2. 遵守 `AGENT-PROTOCOL.md` 和 `SOURCE_OF_TRUTH.md`。
+2. 遵守 `AGENT-PROTOCOL.md`、`SOURCE_OF_TRUTH.md` 和 `EDITORIAL-QUALITY.md`。
 3. 先验证来源需求已验收且用户在验收后发起内容沉淀，再恢复文章需要覆盖的需求演化。
-4. 发布前运行校验器。
+4. 按个人表达和独立平台档案生成稿件，逐稿完成读者语言与平台风格审校，再运行校验器。
 5. 缺少工具时使用安全降级并保留 unknown，不得假装完成。
 6. 最终内容与明确平台清单一次确认后直接发布；删除、覆盖、站外同步、授权和付款仍单独确认。
 

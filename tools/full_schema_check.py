@@ -16,6 +16,10 @@ FILE_SCHEMAS = {
     "metrics.json": "metrics.schema.json",
     "handoff-state.json": "handoff-state.schema.json",
 }
+OPTIONAL_FILE_SCHEMAS = {
+    "editorial_policy": "editorial-policy.schema.json",
+    "editorial_reviews": "editorial-reviews.schema.json",
+}
 
 
 def main() -> int:
@@ -33,10 +37,18 @@ def main() -> int:
         if not entry.get("enabled"):
             continue
         project = (registry_path.parent / entry["path"]).resolve()
+        manifest = json.loads((project / "project-manifest.json").read_text(encoding="utf-8"))
         for filename, schema_name in FILE_SCHEMAS.items():
             data = json.loads((project / filename).read_text(encoding="utf-8"))
             schema = json.loads((ROOT / "schemas" / schema_name).read_text(encoding="utf-8"))
             errors.extend(f"{project.name}/{filename}: {item.message}" for item in Draft202012Validator(schema).iter_errors(data))
+        for pointer, schema_name in OPTIONAL_FILE_SCHEMAS.items():
+            relative = manifest.get("files", {}).get(pointer)
+            if not relative:
+                continue
+            data = json.loads((project / relative).read_text(encoding="utf-8"))
+            schema = json.loads((ROOT / "schemas" / schema_name).read_text(encoding="utf-8"))
+            errors.extend(f"{project.name}/{relative}: {item.message}" for item in Draft202012Validator(schema).iter_errors(data))
     if errors:
         print("\n".join(errors))
         return 1

@@ -1,6 +1,6 @@
 ---
 name: content-publishing-sop
-description: Turn a completed and accepted requirement into a complete, reusable content package, validate articles/images/video/canonical prompts, adapt it for multiple platforms, publish after one final content-and-platform confirmation, verify public delivery, collect metrics, and maintain the content dashboard. Use when the user asks to整理成文章、沉淀经验、生成图文或视频、全平台发布、修复已发布内容、检查完整提示词、恢复内容发布项目、查看发布看板，或在另一台机器/IDE 继续内容生产与发布。
+description: Turn a completed and accepted requirement into a complete, reusable content package; calibrate the user's voice; create genuinely different platform versions; validate reader language, AI-writing traces, articles/images/video/canonical prompts; publish after one final content-and-platform confirmation; verify public delivery; collect metrics; and maintain the dashboard. Use when the user asks to整理成文章、沉淀经验、去AI味、按平台改写、生成图文或视频、全平台发布、修复已发布内容、检查完整提示词、恢复内容发布项目、查看发布看板，或在另一台机器/IDE 继续内容生产与发布。
 ---
 
 # Content Publishing SOP
@@ -29,6 +29,7 @@ Always read these files completely before acting:
 2. `<workbench>/AGENT-PROTOCOL.md`
 3. `<workbench>/SOURCE_OF_TRUTH.md`
 4. `<workbench>/SOP.md`
+5. `<workbench>/EDITORIAL-QUALITY.md`
 
 For a new or resumed content project, also read:
 
@@ -59,8 +60,13 @@ Write these facts to `project-manifest.json.source_work`. If the requirement is 
 2. Reconstruct the full completed process in `decision-log.json`.
 3. Bind acceptance and content-request event IDs in `source_work`.
 4. Create the master article and the single canonical prompt.
-5. Register the project in `projects/registry.json`.
-6. Run the default validator and report evidence gaps before producing publication claims.
+5. Run the read-only `content-publishing carrier detect` only against the explicitly identified source project. Show the complete candidate and require a separate human decision before `carrier confirm` or `carrier confirm-none`; never write, upload, commit, push, or use a detected repository automatically.
+6. Record `prompt_delivery_context`: keep factual content origin separate from the human GitHub-carrier decision, preserve the confirmed origin whether the human accepts or declines a candidate, prefer full text or at most two prompt cards for short prompts, reuse a confirmed direct public URL for long prompts, and never create GitHub or another public host without explicit authorization.
+7. Establish `editorial-policy.json`: use 3–5 approved writing samples when available; otherwise record the weaker evidence source and its limitation.
+8. Generate each platform version from the same facts through its own profile; never fabricate personal experience to make copy sound human.
+9. Complete `editorial-reviews.json` for every required text deliverable and bind each review to the content and policy SHA-256.
+10. Register the project in `projects/registry.json`.
+11. Run the default validator and report evidence gaps before producing publication claims.
 
 ### Resume an existing project
 
@@ -70,10 +76,11 @@ Write these facts to `project-manifest.json.source_work`. If the requirement is 
 
 ### Review or repair content
 
-1. Compare the decision log, story coverage, deliverables, media, platform variants, and canonical prompt.
+1. Compare the decision log, story coverage, deliverables, media, canonical prompt, author-voice evidence, platform profiles and per-deliverable editorial reviews.
 2. Repair the source of truth first, then regenerate derivatives.
-3. Invalidate the previous release after any publication-content change.
-4. Re-run validation and freeze a new digest before asking for final review.
+3. Use targeted repair for isolated writing traces. If the recorded pattern/category density and uniform structure reach the policy threshold, rebuild the structure from verified facts instead of replacing words.
+4. Invalidate the previous release after any publication-content or editorial-policy change.
+5. Re-run validation and freeze a new digest before asking for final review.
 
 ### Publish or update
 
@@ -86,11 +93,14 @@ Write these facts to `project-manifest.json.source_work`. If the requirement is 
 
 Do not infer platform scope when the platform list is missing. Require separate confirmation for deletion, takedown, overwrite, unlisted external sync, copyright/commercial agreements, login, CAPTCHA, MFA, payment, or disclosure of private information. Explicitly tell the user when one of these boundaries pauses execution.
 
+Do not require a repository for ordinary experience-sharing articles. Creating or uploading to GitHub, Gist, cloud storage, or another public host is an external publication action unless the project already has an approved public carrier; obtain explicit authorization before doing it.
+
 ## Run deterministic gates
 
 From `<workbench>` use:
 
 ```bash
+python3 tools/content_publishing.py editorial-init <project>
 python3 validator/validate.py --project <project>
 python3 tools/release_digest.py --project <project>
 python3 validator/validate.py --project <project> --strict
@@ -131,6 +141,7 @@ Report:
 
 - source requirement and acceptance evidence;
 - content stage and completed deliverables;
+- author-voice evidence, platform-profile bindings and editorial-review status;
 - canonical prompt status;
 - release version and digest;
 - validation results;

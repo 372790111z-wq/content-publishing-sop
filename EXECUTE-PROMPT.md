@@ -12,9 +12,9 @@
 一、读取顺序
 
 1. 查找并读取 <工作台目录>/START-HERE.md。
-2. 读取 AGENT-PROTOCOL.md、SOURCE_OF_TRUTH.md 和 SOP.md。
+2. 读取 AGENT-PROTOCOL.md、SOURCE_OF_TRUTH.md、SOP.md 和 EDITORIAL-QUALITY.md。
 3. 读取当前 IDE 对应的 adapters/<ide>/README.md；如果没有对应适配层，使用 adapters/generic-agent/README.md。
-4. 读取 projects/registry.json，找到目标内容项目，再读取 project-manifest.json、decision-log.json、content-requirements.json、platform-status.json、metrics.json、handoff-state.json 和 publication-receipts.json。
+4. 读取 projects/registry.json，找到目标内容项目，再读取 project-manifest.json、decision-log.json、content-requirements.json、editorial-policy.json、editorial-reviews.json、platform-status.json、metrics.json、handoff-state.json 和 publication-receipts.json。旧项目缺少编辑质量文件时，先运行 `content-publishing editorial-init <项目>`；不得覆盖已有文件。
 5. 不要只依赖当前聊天记录。以项目文件恢复目标、时间线、最终方案、未完成项和授权状态。
 6. 先检查 project-manifest.json.source_work：来源必须是 accepted 的 completed_requirement，有可解析的验收证据；content_requested_at 不得早于 accepted_at，并且有我明确要求沉淀内容的证据。任一条件不成立时停止，不创建内容项目，也不继续写稿。
 7. 如果存在 `content-publishing` 或 `tools/content_publishing.py`，项目创建、release 冻结、grant、pending intent 和回执结算优先调用统一事务命令；不要由每个 IDE 自己重写一套 JSON 状态逻辑。支持 MCP 时可以连接 `content-publishing mcp serve`，它与 CLI 共用同一核心。
@@ -41,13 +41,19 @@ Browser Use 必须分别记录 Skill、Browser Harness CLI、Browser Use 引擎�
 
 先确认最终方案已验收，再生成或更新母稿。母稿必须写清需求如何变化、哪些方案失败、为什么做出最终选择、真实实施结果、限制和复用方法。
 
-完整一键提示词只能有一个 canonical 文件。计算 SHA-256、字节数、字符数、首句、末句和关键锚点，并写入 content-requirements.json。平台稿和提示词图片都从这个真源生成。每套提示词图片必须登记 prompt_card_sets：平台、canonical hash、总页数、连续页码、图片路径、逐页图片 SHA-256、首末句和验证证据。基础 hash 校验不等于 OCR；文字完整性证据必须如实来自生成脚本全文重组、OCR 或人工逐页核对。
+生成平台稿前建立个人表达档案。优先使用我明确认可的3到5篇文章；样本不足时使用一篇认可内容；没有历史样本时只能使用当前项目中的明确反馈，并注明证据较弱。提取叙述视角、句子节奏、偏好用词、观点表达和明确禁用表达。不得模仿第三方作者，也不得为了“更像真人”编造经历、亲测、情绪或身份。
 
-完成内容后先运行默认校验，用 tools/release_digest.py 计算发布内容摘要，将 manifest.release 写为 frozen，并绑定最新 decision sequence；然后运行 strict 校验做冻结验收。之后任何内容变化都要让旧 release 和旧授权失效，重新校验、计算和冻结。
+读取 `editorial-policy.json.platform_profiles`。所有平台共用事实、数据、命令、链接、决策理由、已知限制和 canonical prompt；标题、开头、结构、语气、媒体与互动方式按平台重新组织。换标题、换表情或机械压缩不算平台适配。
+
+完整一键提示词只能有一个 canonical 文件。计算 SHA-256、字节数、字符数、首句、末句和关键锚点，并写入 content-requirements.json。先填写 prompt_delivery_context：区分纯经验分享和已有项目，记录短提示词阈值、图片页数上限、现成公开链接、外部托管授权和决定证据。若内容来自项目，只对我明确给出的文章来源目录运行 `content-publishing carrier detect`；检测只读，不扫描整个账号，也不提交、推送或写入候选。把仓库、提交、提示词路径、直达链接、检查结果和 candidate_id 完整展示给我。我明确确认使用后才能运行 `carrier confirm`；我决定不用时运行 `carrier confirm-none`。两个确认命令必须重新检测、核对 candidate_id 并绑定确认事件证据。文章来源类型与是否使用 GitHub 必须分开记录，接受或拒绝候选都不得改写已经确认的文章来源。短提示词优先正文全文或最多两页图片；已有项目的长提示词可以使用经过确认的直接文件链接；没有现成公开载体时，不得为了发文章自动上传 GitHub、Gist、网盘或其他站点。每套提示词图片必须登记 prompt_card_sets：平台、canonical hash、总页数、连续页码、图片路径、逐页图片 SHA-256、首末句和验证证据。基础 hash 校验不等于 OCR；文字完整性证据必须如实来自生成脚本全文重组、OCR 或人工逐页核对。
+
+为每个必需文本交付物完成独立审校，并写入 `editorial-reviews.json`：绑定当前内容 SHA-256、当前 editorial policy SHA-256、平台档案 id/版本、审校时间和证据；逐项检查事实忠实、全过程、提示词、AI 写作痕迹、个人表达、平台适配和媒体适配。少量问题做局部修改；如果问题命中数量、类别数量和整齐结构达到策略阈值，必须保留事实后重新组织全文，不能只换词。可调用 humanizer-zh、dbs-ai-check 或宿主等价工具，但它们只是可选增强；缺少工具时执行仓库本地规则，标准不降低。
+
+完成内容和审校后先运行默认校验，用 tools/release_digest.py 计算发布内容、编辑策略与逐稿审校记录摘要，将 manifest.release 写为 frozen，并绑定最新 decision sequence；然后运行 strict 校验做冻结验收。之后任何内容、编辑策略或审校记录变化都要让旧 release 和旧授权失效，重新审校、计算和冻结。
 
 五、制作和检查图文视频
 
-图片逐项检查文件、尺寸、顺序、来源、隐私和可读性。长提示词做成图片时必须连续编号，验证第一页和最后一页。
+图片逐项检查文件、尺寸、顺序、来源、隐私和可读性。只有符合项目字符阈值且不超过页数上限的提示词才做成图片；生成后必须连续编号，并验证第一页和最后一页。
 
 视频先做工程级检查，再检查最终导出文件。工程级检查包括素材、时间线、字幕、配音和指定帧；文件级检查包括音视频流、时长、编码、长静音、连续黑屏和可解码性。不能用“时间线上有音频”代替“导出文件有声音”。
 
@@ -55,13 +61,15 @@ Browser Use 必须分别记录 Skill、Browser Harness CLI、Browser Use 引擎�
 
 运行 validator/validate.py --project <目标项目目录> --strict。校验器必须先执行 schemas/ 的结构校验，再执行语义门禁。
 
-以下任一情况必须阻止发布：来源需求未验收、没有验收后发起内容沉淀的证据、讨论过程不完整、完整提示词缺失或哈希不一致、长文没有提示词全文、提示词图片缺页、资产缺失、视频验收未完成、公开稿包含本地绝对路径或平台状态混乱。
+以下任一情况必须阻止发布：来源需求未验收、没有验收后发起内容沉淀的证据、讨论过程不完整、完整提示词缺失或哈希不一致、所选交付方式不能让普通读者获得完整提示词、仓库候选未经人工确认或候选已经变化、提示词图片超过项目上限或缺页、链接没有直接定位提示词、没有授权却新建外部公开载体、资产缺失、视频验收未完成、公开稿包含本地绝对路径、个人表达档案没有证据、平台稿没有独立档案、逐稿审校没有绑定当前内容和策略、AI 痕迹达到重写阈值却只换词，或平台状态混乱。
 
 修复后重新运行，不沿用旧报告。
 
 七、平台适配、最终确认和发布
 
-从母稿派生平台稿，保留事实和完整交付，不机械复制格式。最终审阅时必须同时展示：最终文章、图片、视频、完整一键提示词、每个平台的发布版本、明确的平台清单、门禁结果和已知风险。
+从同一事实真源派生平台稿，保留事实和完整交付，不机械复制格式。人人都是产品经理突出实践判断和为什么做；知乎突出问题、证据和取舍；简书突出可复现教程；小红书突出具体场景、短段落和连续配图；抖音使用可朗读口播与画面节拍；哔哩哔哩按背景、尝试、方案、演示、结果和限制分章。平台硬限制发布前从当前官方页面或已测试连接器确认。
+
+最终审阅时必须同时展示：最终文章、图片、视频、完整一键提示词、每个平台的发布版本、个人表达证据、平台档案版本、逐稿审校结果、明确的平台清单、门禁结果和已知风险。
 
 当平台清单已经明确，我回复“确认”“内容没问题”“可以了”或同义表达时，这一次确认同时表示内容审核通过并授权直接发布到刚展示的平台，不要再问第二次“是否发布”。把确认写成一次性范围化 grant：唯一 id、`public_publish` 或 `update_publication`、`approval_kind=content_and_platforms_confirmed`、平台列表、当前 frozen release_digest、授权和过期时间、确认原文、active 状态、空 receipt_ids。不要用 public_publish=true 等旧布尔值代替授权。
 
@@ -81,5 +89,5 @@ Browser Use 必须分别记录 Skill、Browser Harness CLI、Browser Use 引擎�
 
 十、最终报告
 
-同步 HANDOFF.md 与 handoff-state.json。报告当前阶段、冻结摘要、有效或已消费 grant、发布回执、已完成内容、证据路径、门禁结果、各平台真实状态、指标采集检查点与趋势、看板新鲜度、未知项、需要人工处理的步骤和下一步。未知指标保持 unknown。
+同步 HANDOFF.md 与 handoff-state.json。报告当前阶段、冻结摘要、个人表达证据、平台档案版本、逐稿审校状态、有效或已消费 grant、发布回执、已完成内容、证据路径、门禁结果、各平台真实状态、指标采集检查点与趋势、看板新鲜度、未知项、需要人工处理的步骤和下一步。未知指标保持 unknown。
 ```

@@ -16,4 +16,4 @@
 
 ## 一键执行提示词
 
-将 `canonical-prompt.md` 的完整内容嵌入此处，不要只写文件名。
+根据 `content-requirements.json.prompt_delivery_context` 选择交付方式：短提示词嵌入完整内容；已有公开项目的长提示词可以使用直接文件链接；没有现成公开载体时，不得自动创建 GitHub 或其他外部页面。

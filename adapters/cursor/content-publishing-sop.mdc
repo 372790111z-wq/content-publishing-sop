@@ -1,5 +1,5 @@
 ---
-description: 内容生产、图文视频完整性验收与多平台发布工作台入口
+description: 内容生产、个人表达与平台风格审校、图文视频完整性验收及多平台发布工作台入口
 globs:
 alwaysApply: true
 ---
@@ -9,5 +9,6 @@ alwaysApply: true
 @content-publishing-sop/START-HERE.md
 @content-publishing-sop/AGENT-PROTOCOL.md
 @content-publishing-sop/SOURCE_OF_TRUTH.md
+@content-publishing-sop/EDITORIAL-QUALITY.md
 
 先验证来源需求已验收、内容由用户在验收后发起，再恢复文章覆盖的需求演化和授权状态。发布前运行校验器；无法验证时保留 unknown。最终内容与明确平台清单一次确认后直接发布；删除、覆盖、站外同步、授权和付款仍单独确认。

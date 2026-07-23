@@ -15,6 +15,9 @@ class McpTests(unittest.TestCase):
         names = {item["name"] for item in listed["result"]["tools"]}
         self.assertIn("content_publish_prepare", names)
         self.assertIn("content_receipt_settle", names)
+        self.assertIn("content_prompt_carrier_detect", names)
+        self.assertIn("content_prompt_carrier_confirm", names)
+        self.assertIn("content_prompt_carrier_confirm_none", names)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 # 从这里开始
 
-这是一套跨机器、跨 IDE 的后置内容沉淀、完整性校验与发布治理工具。它不参与需求开发，也不统计完成了多少需求。只有一个需求已经实施、验收，并被用户判断为值得复用后，才把完整过程整理成文章、图片和视频，并在发布前证明内容没有漏项。
+这是一套跨机器、跨 IDE 的后置内容沉淀、读者语言审校、完整性校验与发布治理工具。它不参与需求开发，也不统计完成了多少需求。只有一个需求已经实施、验收，并被用户判断为值得复用后，才把完整过程整理成文章、图片和视频，并在发布前证明内容没有漏项、没有明显 AI 写作痕迹，而且不同平台版本符合各自阅读场景。
 
 第一次接入的 Agent 可以先读根目录 `tool-manifest.json` 获取机器可读的定位、入口、已实现能力和明确不承诺的能力，再按本文顺序读取真源协议。
 
@@ -16,9 +16,9 @@
 
 1. 先正常完成并验收需求；未完成的需求不进入本工作台。
 2. 当你认为它值得复用时，明确说“把这次过程整理成文章”。
-3. 此时运行 `content-publishing new-project ...`，事务化创建项目并登记；命令不会编造讨论或验收事实。
+3. 此时运行 `content-publishing new-project ...`，事务化创建项目、个人表达与平台风格文件并登记；命令不会编造讨论、验收事实或个人经历。旧项目先运行 `content-publishing editorial-init <项目>`。
 4. 打开 `dashboard/index.html` 查看内容项目、内容门禁和平台发布状态；看板不展示需求完成数量。
-5. 先运行默认校验，再计算并登记 release digest；写成 frozen 后运行 `--strict` 做冻结验收。
+5. 如果内容来自项目，只对你明确指出的文章来源项目运行 `content-publishing carrier detect`。检测只产生候选，不写入项目；把结果展示给你以后，再根据你的明确决定运行 `carrier confirm` 或 `carrier confirm-none`。文章来源类型和是否使用 GitHub 分开记录，接受或拒绝候选都不能改写已经确认的文章来源。随后按提示词长度和已确认载体选择全文、少量图片或可访问链接；没有项目时不自动创建 GitHub 仓库。为每个必需稿件完成事实、全过程、提示词、AI 写作痕迹、个人表达、平台和媒体适配审校；再运行默认校验、计算 release digest，并用 `--strict` 做冻结验收。
 6. 向你展示最终内容、媒体、门禁结果和目标平台。你确认内容无误后，该次确认同时生成这些平台的发布 grant，并直接进入发布执行，不再二次询问。
 7. 使用 `grant`、`prepare` 和 `settle` 完成授权、pending intent 与回执事务；只有平台动作取得证据并完成结算后，才把状态写成已发布或失败。
 
@@ -29,13 +29,14 @@
 1. `AGENT-PROTOCOL.md`
 2. `SOURCE_OF_TRUTH.md`
 3. `SOP.md`
-4. 目标项目的 `project-manifest.json`
-5. `decision-log.json`
-6. `content-requirements.json`
-7. `handoff-state.json` 与 `publication-receipts.json`
-8. `projects/registry.json`
-9. 当前 IDE 对应的 `adapters/<ide>/README.md`
-10. `EXECUTE-PROMPT.md`
+4. `EDITORIAL-QUALITY.md`
+5. 目标项目的 `project-manifest.json`
+6. `decision-log.json`
+7. `content-requirements.json`、`editorial-policy.json` 与 `editorial-reviews.json`
+8. `handoff-state.json` 与 `publication-receipts.json`
+9. `projects/registry.json`
+10. 当前 IDE 对应的 `adapters/<ide>/README.md`
+11. `EXECUTE-PROMPT.md`
 
 先验证 `source_work`：来源必须是已经验收的需求，且用户明确提出内容沉淀的时间不得早于需求验收。条件不成立时停止，不得提前创建文章项目。条件成立后再运行能力检测和内容校验。缺少工具时使用适配层中的降级步骤，不得把“工具不存在”“作者后台保存成功”或“本地文件存在”写成内容已经交付。
 
@@ -62,7 +63,7 @@ python3 -m unittest -v test_validator.py
 
 - 文件层：真源、文章、图片、视频和提示词真实存在。
 - 来源层：文章来源于已经完成并验收的需求，且用户明确要求沉淀内容。
-- 内容层：讨论过程的九阶段映射、最终方案和完整提示词没有遗漏。
+- 内容层：讨论过程的九阶段映射、最终方案和完整提示词没有遗漏；提示词交付方式与内容来源、长度、现成载体和授权匹配；个人表达和平台档案有证据，每个必需稿件通过独立审校。
 - 发布层：目标平台状态真实，审核中不写成已公开。
 - 授权层：冻结摘要、范围化一次性授权和逐平台回执能够互相对应。
 - 读者层：普通读者能从公开入口看到正文、图片并拿到完整提示词，且验收有证据。
@@ -70,7 +71,7 @@ python3 -m unittest -v test_validator.py
 
 ## 创建第一个项目
 
-使用 `content-publishing new-project <project-id> --help` 创建骨架并登记。填入已经完成并验收的来源需求、全过程、最终交付物和完整一键提示词，再运行门禁。项目内容默认属于本地资料；上传前应单独做隐私和授权检查。
+使用 `content-publishing new-project <project-id> --help` 创建骨架并登记。填入已经完成并验收的来源需求、全过程、最终交付物和完整一键提示词，建立个人表达档案，逐个平台生成并审校，再运行门禁。旧项目用 `content-publishing editorial-init <项目>` 补齐编辑质量文件。项目内容默认属于本地资料；上传前应单独做隐私和授权检查。
 
 项目自身升级使用 `content-publishing update`；外部 CLI 检测和定向升级使用 `content-publishing deps ...`。二者不会互相隐式调用。
 

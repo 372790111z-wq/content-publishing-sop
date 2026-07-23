@@ -8,9 +8,10 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from . import __version__
+from .carriers import confirm_no_prompt_carrier, confirm_prompt_carrier, detect_prompt_carrier
 from .common import CommandError, find_workbench
 from .doctor import diagnose
-from .projects import new_project
+from .projects import initialize_editorial, new_project
 from .publisher import publication_plan, registry
 from .transactions import create_grant, freeze_release, prepare_intents, settle_receipt
 
@@ -39,6 +40,57 @@ TOOLS = [
                 "project": {"type": "string"},
                 "action": {"enum": ["public_publish", "update_publication"]},
                 "platforms": {"type": "array", "items": {"type": "string"}},
+            },
+        },
+    },
+    {
+        "name": "content_editorial_initialize",
+        "description": "Add portable author-voice, platform-profile and per-deliverable review sources to an existing content project.",
+        "inputSchema": {"type": "object", "required": ["project"], "properties": {"project": {"type": "string"}}},
+    },
+    {
+        "name": "content_prompt_carrier_detect",
+        "description": "Read-only detection of a public GitHub prompt carrier for the explicitly supplied source project. Never writes the candidate.",
+        "inputSchema": {
+            "type": "object",
+            "required": ["project", "source", "prompt_path"],
+            "properties": {
+                "project": {"type": "string"},
+                "source": {"type": "string"},
+                "prompt_path": {"type": "string"},
+                "timeout": {"type": "number"},
+            },
+        },
+    },
+    {
+        "name": "content_prompt_carrier_confirm",
+        "description": "Re-detect and record a public GitHub prompt carrier only after explicit human confirmation evidence.",
+        "inputSchema": {
+            "type": "object",
+            "required": ["project", "source", "prompt_path", "candidate_id", "evidence"],
+            "properties": {
+                "project": {"type": "string"},
+                "source": {"type": "string"},
+                "prompt_path": {"type": "string"},
+                "candidate_id": {"type": "string"},
+                "evidence": {"type": "array", "items": {"type": "string"}},
+                "timeout": {"type": "number"},
+            },
+        },
+    },
+    {
+        "name": "content_prompt_carrier_confirm_none",
+        "description": "Re-detect and record the human decision not to use a GitHub carrier for this article.",
+        "inputSchema": {
+            "type": "object",
+            "required": ["project", "source", "prompt_path", "candidate_id", "evidence"],
+            "properties": {
+                "project": {"type": "string"},
+                "source": {"type": "string"},
+                "prompt_path": {"type": "string"},
+                "candidate_id": {"type": "string"},
+                "evidence": {"type": "array", "items": {"type": "string"}},
+                "timeout": {"type": "number"},
             },
         },
     },
@@ -81,7 +133,7 @@ TOOLS = [
                 "public_url": {"type": "string"},
                 "external_id": {"type": "string"},
                 "reader_verified": {"type": "boolean"},
-                "prompt_delivery": {"type": "string"},
+                "prompt_delivery": {"enum": ["full_text", "prompt_cards", "accessible_link", "not_required"]},
             },
         },
     },
@@ -102,6 +154,23 @@ def call_tool(root: Path, name: str, arguments: Dict[str, Any]) -> Dict[str, Any
         if not project.is_absolute():
             project = root / project
         return publication_plan(project.resolve(), arguments["action"], arguments["platforms"])
+    if name == "content_editorial_initialize":
+        return initialize_editorial(root, arguments["project"])
+    if name == "content_prompt_carrier_detect":
+        return detect_prompt_carrier(
+            root, arguments["project"], Path(arguments["source"]), arguments["prompt_path"],
+            float(arguments.get("timeout", 5.0)),
+        )
+    if name == "content_prompt_carrier_confirm":
+        return confirm_prompt_carrier(
+            root, arguments["project"], Path(arguments["source"]), arguments["prompt_path"],
+            arguments["candidate_id"], arguments["evidence"], float(arguments.get("timeout", 5.0)),
+        )
+    if name == "content_prompt_carrier_confirm_none":
+        return confirm_no_prompt_carrier(
+            root, arguments["project"], Path(arguments["source"]), arguments["prompt_path"],
+            arguments["candidate_id"], arguments["evidence"], float(arguments.get("timeout", 5.0)),
+        )
     if name == "content_release_freeze":
         return freeze_release(root, arguments["project"], arguments["version"])
     if name == "content_grant_create":

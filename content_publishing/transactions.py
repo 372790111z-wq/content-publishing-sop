@@ -267,7 +267,10 @@ def settle_receipt(
         if reader_verified:
             platform["reader_validation"] = "verified"
             existing_delivery = platform.get("prompt_delivery")
-            platform["prompt_delivery"] = prompt_delivery or (existing_delivery if existing_delivery != "unknown" else "accessible_link")
+            if prompt_delivery:
+                platform["prompt_delivery"] = prompt_delivery
+            elif existing_delivery == "unknown":
+                raise CommandError("读者验收必须明确记录实际提示词交付方式，不能把未知值默认成可访问链接。")
     elif status in {"succeeded", "verified_existing"} and receipt.get("action") == "delete_publication":
         platform.update(
             status="archived",
