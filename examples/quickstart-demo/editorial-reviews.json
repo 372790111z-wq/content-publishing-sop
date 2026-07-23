@@ -1,0 +1,36 @@
+{
+  "schema_version": "1.0",
+  "project_id": "quickstart-demo",
+  "reviews": [
+    {
+      "id": "review-master-v1",
+      "deliverable_id": "master",
+      "platform": null,
+      "status": "verified",
+      "reviewed_at": "2026-07-22T12:00:00+08:00",
+      "reviewer": "demo-editor",
+      "providers": ["local-policy"],
+      "content_sha256": "d84b6a79dcd96c1ccb88027d237a77c778fac2441ce028b194d8b7c3dee51eff",
+      "policy_sha256": "32723499e27572f3b22430ac17cd0b236c70727ecb3d34159d58e9d7c035965d",
+      "profile_id": null,
+      "profile_version": null,
+      "rewrite_mode": "targeted",
+      "ai_audit": {
+        "pattern_hits": 2,
+        "category_hits": 2,
+        "uniform_structure": false
+      },
+      "checks": {
+        "fact_fidelity": "verified",
+        "process_completeness": "verified",
+        "prompt_integrity": "verified",
+        "ai_trace": "verified",
+        "author_voice": "verified",
+        "platform_fit": "not_applicable",
+        "medium_fit": "verified"
+      },
+      "findings": ["删除了两处空泛总结，保留全部决策和提示词原文。"],
+      "evidence": ["editorial/quality-report.md#review-master-v1"]
+    }
+  ]
+}

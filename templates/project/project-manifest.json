@@ -26,7 +26,9 @@
     "master_content": "content/master.md",
     "handoff": "HANDOFF.md",
     "handoff_state": "handoff-state.json",
-    "publication_receipts": "publication-receipts.json"
+    "publication_receipts": "publication-receipts.json",
+    "editorial_policy": "editorial-policy.json",
+    "editorial_reviews": "editorial-reviews.json"
   },
   "authorization": {
     "local_changes": false,

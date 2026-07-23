@@ -1,6 +1,6 @@
-请先在当前工作区查找 `content-publishing-sop/START-HERE.md` 并完整读取。随后读取 `AGENT-PROTOCOL.md`、`SOURCE_OF_TRUTH.md`、`SOP.md`、`projects/registry.json` 和目标项目 manifest 指向的全部真源 JSON。
+请先在当前工作区查找 `content-publishing-sop/START-HERE.md` 并完整读取。随后读取 `AGENT-PROTOCOL.md`、`SOURCE_OF_TRUTH.md`、`SOP.md`、`EDITORIAL-QUALITY.md`、`projects/registry.json` 和目标项目 manifest 指向的全部真源 JSON。
 
-先检查 `project-manifest.json.source_work`，证明来源需求已验收，且用户在验收后明确要求沉淀内容；条件不成立就停止，不创建内容项目。然后说明你具备和缺少的能力，再恢复文章必须覆盖的原始需求、关键讨论、最终方案、证据和未解决项。不要根据摘要直接发布。完整提示词必须使用 canonical 文件并校验首句、末句和 SHA-256。
+先检查 `project-manifest.json.source_work`，证明来源需求已验收，且用户在验收后明确要求沉淀内容；条件不成立就停止，不创建内容项目。然后说明你具备和缺少的能力，再恢复文章必须覆盖的原始需求、关键讨论、最终方案、证据和未解决项。不要根据摘要直接发布。完整提示词必须使用 canonical 文件并校验首句、末句和 SHA-256。再读取 `prompt_delivery_context`：纯经验分享的短提示词直接完整展示，不要求 GitHub；已有公开项目才复用现成链接；没有现成载体时不得擅自创建 GitHub、Gist、网盘或其他公开页面；提示词图片默认最多两页。若内容来自项目，只对用户明确给出的来源目录运行只读 `carrier detect`，把仓库、提交、路径、链接、检查结果和候选编号完整展示给用户；得到单独的人工决定后才运行 `carrier confirm` 或 `carrier confirm-none`。确认命令必须重新检测，候选变化时重新展示、重新确认；检测与确认都不得自动提交、推送或创建仓库。文章来源类型与是否使用 GitHub 必须分开记录。生成平台稿前读取个人表达与平台档案；逐稿记录 AI 写作痕迹、个人表达、平台和媒体适配审校，并绑定内容与策略 SHA-256。
 
 如果能执行 Python，运行能力检测和内容校验器；不能执行时按同名门禁人工检查。无法验证的内容写 unknown，不得写已完成。
 

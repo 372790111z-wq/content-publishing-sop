@@ -2,7 +2,7 @@
 
 这份教程面向第一次使用本工作台的人。你不需要先理解所有 JSON、校验器或发布回执；先按“最快开始”操作，遇到问题再查后面的详细章节。
 
-从 v0.2.0 开始，优先使用统一 `content-publishing` CLI 或 `python3 tools/content_publishing.py`。底层脚本继续保留，但新用户不再需要手工复制模板和维护约 8 个 JSON 文件。
+从 v0.3.0 开始，优先使用统一 `content-publishing` CLI 或 `python3 tools/content_publishing.py`。新项目会同时创建个人表达、平台档案和逐稿审校文件；底层脚本继续保留，但新用户不再需要手工复制模板和维护多组 JSON 文件。
 
 ## 1. 先理解它负责什么
 
@@ -15,7 +15,7 @@ flowchart LR
     C -- 否 --> D[结束，不创建内容项目]
     C -- 是 --> E[用户明确要求整理内容]
     E --> F[生成文章、图片、视频和完整提示词]
-    F --> G[完整性校验]
+    F --> G[个人表达、平台风格与完整性校验]
     G --> H[展示最终内容和平台清单]
     H --> I[用户一次确认]
     I --> J[进入已列明平台的连接器或人工执行]
@@ -120,6 +120,8 @@ content-publishing-sop/
         ├── content-requirements.json
         ├── platform-status.json
         ├── publication-receipts.json
+        ├── editorial-policy.json
+        ├── editorial-reviews.json
         ├── metrics.json
         ├── HANDOFF.md
         ├── handoff-state.json
@@ -128,9 +130,31 @@ content-publishing-sop/
             └── canonical-prompt.md
 ```
 
+`editorial-policy.json` 保存个人表达和平台档案；`editorial-reviews.json` 为每个必需稿件保存当前内容与策略的 SHA-256、修改方式、七项检查和证据。已有旧项目可以运行：
+
+```bash
+content-publishing editorial-init projects/<项目ID>
+```
+
+命令不会覆盖已有文件。补入新的编辑策略后，旧冻结摘要会失效，这是为了防止旧稿绕过新审校。
+
 正常情况下你不需要手工填写这些 JSON。让 Agent 根据聊天、修改记录、测试结果和你的确认写入，再运行校验器。
 
-### 第四步：检查最终内容
+### 第四步：人工确认是否使用现有 GitHub 载体
+
+如果这篇内容来自一个项目，Agent 只对你明确指出的来源项目运行 `carrier detect`。它会检查提示词是否已经提交并推送、匿名读者能否打开 commit 固定的文件、公开文件是否与本篇 canonical prompt 一致，然后把完整候选和候选编号展示给你。GitHub API 限流不单独构成失败；匿名 raw 文件和哈希验证可以独立证明可访问性。
+
+这一步只读。检测成功也不能自动使用链接，更不能自动 commit、push、创建仓库或扫描整个 GitHub 账号。你需要单独明确选择：
+
+- 使用这个候选：运行 `carrier confirm`；
+- 不使用这个候选：运行 `carrier confirm-none`，改用正文全文或不超过上限的提示词图；
+- 候选信息不对：不确认，先修正来源或提示词。
+
+确认命令会重新检测并核对候选编号。仓库公开状态、提交、路径、提示词哈希或关键检查发生变化后，旧确认不能复用。无论接受还是拒绝候选，系统都保留先前确认的文章来源类型；现有项目不会被误写成纯经验分享，纯经验分享也不会因为采用现成链接而被改写成项目复盘。
+
+纯经验分享没有来源仓库时，不为了发布文章自动新建 GitHub。Agent 仍需记录你确认“不使用仓库载体”的证据。
+
+### 第五步：检查最终内容
 
 发布前，Agent 必须一次性给你看清楚：
 
@@ -144,7 +168,7 @@ content-publishing-sop/
 
 如果内容需要修改，直接指出问题。修改后必须重新校验、重新冻结版本，再给你检查。
 
-### 第五步：确认并发布
+### 第六步：确认并发布
 
 当内容和平台清单都正确时，回复：
 
@@ -162,7 +186,7 @@ content-publishing-sop/
 - 登录、验证码、MFA 或付款；
 - 公开发送隐私或未公开资料。
 
-### 第六步：查看看板
+### 第七步：查看看板
 
 双击下面的文件：
 
@@ -318,7 +342,9 @@ content-publishing new-project <project-id> --help
 4. 在 project-manifest.json.source_work 中引用真实的验收事件和本次内容请求事件；
 5. 写明为什么值得复用；
 6. 把项目加入 projects/registry.json；
-7. 先运行默认校验，报告缺口，不要提前发布。
+7. 内容来自项目时，只读检测公开 GitHub 提示词候选，展示结果并等待我单独确认使用或不使用；
+8. 从我认可的文章或当前项目反馈建立个人表达档案，按目标平台分别生成稿件，并逐稿完成读者语言和平台风格审校；
+9. 先运行默认校验，报告缺口，不要提前发布。
 ```
 
 项目 ID 使用小写英文、数字和短横线，例如：
@@ -329,7 +355,41 @@ meeting-summary-workflow
 content-publishing-repair
 ```
 
-### 4.6 检查内容项目是否合格
+### 4.6 检测并人工确认提示词公开载体
+
+先完成 `content/canonical-prompt.md` 及其 SHA-256，再运行：
+
+```bash
+content-publishing carrier detect projects/my-content-project \
+  --source /path/to/source-project \
+  --prompt-path path/in/source-repo/canonical-prompt.md
+```
+
+确认使用候选：
+
+```bash
+content-publishing carrier confirm projects/my-content-project \
+  --source /path/to/source-project \
+  --prompt-path path/in/source-repo/canonical-prompt.md \
+  --candidate-id <candidate-id> \
+  --evidence 'decision-log.json#event-carrier-confirmed'
+```
+
+确认不使用候选：
+
+```bash
+content-publishing carrier confirm-none projects/my-content-project \
+  --source /path/to/source-project \
+  --prompt-path path/in/source-repo/canonical-prompt.md \
+  --candidate-id <candidate-id> \
+  --evidence 'decision-log.json#event-carrier-declined'
+```
+
+三个命令在 MCP 中分别对应 `content_prompt_carrier_detect`、`content_prompt_carrier_confirm` 和 `content_prompt_carrier_confirm_none`。支持 MCP 的 IDE 可以使用同一事务；其他 IDE 可以调用 CLI。`detect` 永远只读，两个确认命令才会写 `content-requirements.json`，并且都必须绑定项目内可解析的人工确认记录或公开 HTTP(S) 证据。
+
+`content_origin` 表示文章事实来源，`carrier_confirmation` 表示是否采用 GitHub 作为完整提示词入口。两者不能混成一个判断。1.3 项目保持 `pending` 时，冻结和发布会被阻断。
+
+### 4.7 检查内容项目是否合格
 
 假设项目目录是 `projects/my-content-project`：
 
@@ -358,7 +418,7 @@ errors=0
 - 根据错误中的文件路径修复；
 - 修复后重新运行，不沿用旧报告。
 
-### 4.7 冻结最终内容版本
+### 4.8 冻结最终内容版本
 
 内容全部完成后计算摘要：
 
@@ -372,9 +432,9 @@ content-publishing freeze projects/my-content-project --version v1
 python3 tools/release_digest.py --project projects/my-content-project
 ```
 
-冻结后如果文章、图片、视频、提示词或来源身份发生改变，旧摘要和旧发布授权都会失效，必须重新计算。
+冻结后如果文章、图片、视频、提示词、编辑策略、逐稿审校记录或来源身份发生改变，旧摘要和旧发布授权都会失效，必须重新计算。
 
-### 4.8 验证发布授权
+### 4.9 验证发布授权
 
 在你确认最终内容和平台清单后，使用事务命令创建一次性 grant：
 
@@ -410,7 +470,7 @@ update_publication
 
 不能用 `public_publish` 冒充更新，也不能用旧的 `public_publish=true` 布尔值冒充本次授权。
 
-### 4.9 发布后验收
+### 4.10 发布后验收
 
 平台操作完成后运行：
 
@@ -428,7 +488,7 @@ python3 validator/validate.py \
 - 页面不是草稿、审核中、登录后预览或作者后台；
 - 发布回执与线上版本一致。
 
-### 4.10 重建看板
+### 4.11 重建看板
 
 内容、平台状态、指标或校验报告发生变化后运行：
 
@@ -445,7 +505,7 @@ dashboard=current
 
 如果显示 stale，重新构建并检查项目真源，不要手工改 `dashboard/data.js`。
 
-### 4.11 采集发布效果
+### 4.12 采集发布效果
 
 指标检查点到期时，将带证据的快照追加到 `metrics.json`，然后运行：
 
@@ -740,7 +800,7 @@ python3 validator/validate.py \
 | Browser Use 在新机不可用 | Skill、CLI、引擎或隔离启动器没有迁移 | 重新运行能力检测，按本机环境安装或改用人工路径 |
 | 发布动作重复 | 中断后没有核对 pending intent，或已有成功回执 | 先外部对账，禁止直接重试 |
 | 平台后台显示成功但公开页看不到 | 后台状态不等于读者结果 | 运行 postflight，保存普通读者证据 |
-| 完整提示词太长 | 平台正文或简介放不下 | 长文逐字放全文；图文平台使用连续高清提示词图并验证页码 |
+| 完整提示词太长 | 交付方式没有按内容来源和长度分流 | 纯经验分享的短提示词直接放全文或最多两页图；已有公开项目复用直接文件链接；没有现成载体时先询问是否授权新建外部页面，不自动上传 GitHub |
 
 ## 17. 哪些事情需要你亲自操作
 

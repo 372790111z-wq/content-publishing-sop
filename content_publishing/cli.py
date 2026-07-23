@@ -11,12 +11,13 @@ from typing import Optional, Sequence
 
 from . import __version__
 from .bootstrap import DEFAULT_REPOSITORY, bootstrap
+from .carriers import confirm_no_prompt_carrier, confirm_prompt_carrier, detect_prompt_carrier
 from .common import CommandError, find_workbench, json_print
 from .dependencies import check_updates, list_dependencies, upgrade as upgrade_dependency
 from .doctor import diagnose
 from .installers import install_host, uninstall_host
 from .mcp_server import serve
-from .projects import new_project
+from .projects import initialize_editorial, new_project
 from .publisher import publication_plan, registry
 from .transactions import create_grant, freeze_release, prepare_intents, settle_receipt
 from .updater import rollback, status as update_status, update
@@ -105,6 +106,31 @@ def parser() -> argparse.ArgumentParser:
     project.add_argument("--request-evidence", action="append", required=True)
     project.add_argument("--platform", action="append", default=[])
     project.add_argument("--owner", default="")
+
+    editorial = commands.add_parser("editorial-init", help="为现有项目补上个人表达、平台档案和逐稿审校文件")
+    editorial.add_argument("project")
+
+    carrier = commands.add_parser("carrier", help="检测提示词公开载体，并在人工确认后写入选择")
+    carrier_sub = carrier.add_subparsers(dest="carrier_command", required=True)
+    carrier_detect = carrier_sub.add_parser("detect", help="只读检测来源项目的公开 GitHub 提示词候选")
+    carrier_detect.add_argument("project")
+    carrier_detect.add_argument("--source", required=True, help="文章来源的原始项目目录；不能用内容工作台目录代替")
+    carrier_detect.add_argument("--prompt-path", required=True, help="提示词文件相对于来源 Git 仓库根目录的路径")
+    carrier_detect.add_argument("--timeout", type=float, default=5.0)
+    carrier_confirm = carrier_sub.add_parser("confirm", help="重新检测并人工确认使用候选 GitHub 载体")
+    carrier_confirm.add_argument("project")
+    carrier_confirm.add_argument("--source", required=True)
+    carrier_confirm.add_argument("--prompt-path", required=True)
+    carrier_confirm.add_argument("--candidate-id", required=True)
+    carrier_confirm.add_argument("--evidence", action="append", required=True)
+    carrier_confirm.add_argument("--timeout", type=float, default=5.0)
+    carrier_none = carrier_sub.add_parser("confirm-none", help="重新检测并人工确认本篇不使用 GitHub 载体")
+    carrier_none.add_argument("project")
+    carrier_none.add_argument("--source", required=True)
+    carrier_none.add_argument("--prompt-path", required=True)
+    carrier_none.add_argument("--candidate-id", required=True)
+    carrier_none.add_argument("--evidence", action="append", required=True)
+    carrier_none.add_argument("--timeout", type=float, default=5.0)
 
     freeze = commands.add_parser("freeze", help="校验并冻结一个 release")
     freeze.add_argument("project")
@@ -216,6 +242,21 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 root, args.project_id, args.title, args.source_title, args.accepted_at, args.requested_at,
                 args.reuse_reason, args.acceptance_evidence, args.request_evidence, args.platform, args.owner,
             )
+        elif args.command == "editorial-init":
+            result = initialize_editorial(root, args.project)
+        elif args.command == "carrier":
+            if args.carrier_command == "detect":
+                result = detect_prompt_carrier(root, args.project, Path(args.source), args.prompt_path, args.timeout)
+            elif args.carrier_command == "confirm":
+                result = confirm_prompt_carrier(
+                    root, args.project, Path(args.source), args.prompt_path,
+                    args.candidate_id, args.evidence, args.timeout,
+                )
+            else:
+                result = confirm_no_prompt_carrier(
+                    root, args.project, Path(args.source), args.prompt_path,
+                    args.candidate_id, args.evidence, args.timeout,
+                )
         elif args.command == "freeze":
             result = freeze_release(root, args.project, args.version)
         elif args.command == "grant":

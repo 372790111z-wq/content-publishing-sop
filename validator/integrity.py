@@ -10,7 +10,7 @@ from typing import Any, Dict, Iterable, List, Tuple
 def _unique_sources(project: Path, manifest: Dict[str, Any], requirements: Dict[str, Any]) -> Iterable[Tuple[str, Path]]:
     files = manifest.get("files", {}) if isinstance(manifest.get("files"), dict) else {}
     sources: List[Tuple[str, Path]] = []
-    for label in ("decision_log", "content_requirements"):
+    for label in ("decision_log", "content_requirements", "editorial_policy", "editorial_reviews"):
         relative = files.get(label)
         if relative:
             sources.append((label, (project / relative).resolve()))
