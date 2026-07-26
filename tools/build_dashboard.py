@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -289,15 +290,28 @@ def dashboard_is_current(current: Optional[Dict[str, Any]], expected: Dict[str, 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     script_root = Path(__file__).resolve().parent.parent
+    public_registry = script_root / "projects" / "registry.json"
+    local_registry = script_root / ".content-publishing" / "registry.json"
     parser = argparse.ArgumentParser(description="重建本地静态看板的数据文件")
     parser.add_argument("--projects-root", default=str(script_root / "examples"))
-    parser.add_argument("--output", default=str(script_root / "dashboard" / "data.js"))
-    parser.add_argument("--registry", help="可选项目注册表；默认读取 projects/registry.json")
+    parser.add_argument("--output", help="可选输出文件；私人登记表默认写入被 Git 忽略的本机控制台")
+    parser.add_argument(
+        "--registry",
+        help="可选项目注册表；默认优先读取本机 .content-publishing/registry.json，否则读取 projects/registry.json",
+    )
     parser.add_argument("--check", action="store_true", help="只检查现有看板是否与真源一致，不写文件")
     args = parser.parse_args(argv)
     root = Path(args.projects_root).resolve()
-    output = Path(args.output).resolve()
-    registry = Path(args.registry).resolve() if args.registry else None
+    registry = Path(args.registry).resolve() if args.registry else (
+        local_registry.resolve() if local_registry.is_file() else None
+    )
+    selected_registry = registry or public_registry.resolve()
+    private_dashboard = script_root / ".content-publishing" / "dashboard"
+    output = Path(args.output).resolve() if args.output else (
+        private_dashboard / "data.js"
+        if selected_registry != public_registry.resolve()
+        else script_root / "dashboard" / "data.js"
+    )
     payload = build(root, output, registry)
     if args.check:
         if dashboard_is_current(read_bundle(output), payload):
@@ -307,6 +321,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 1
     rendered = DATA_PREFIX + json.dumps(payload, ensure_ascii=False, indent=2) + ";\n"
     output.parent.mkdir(parents=True, exist_ok=True)
+    if output.parent == private_dashboard.resolve():
+        for asset in ("index.html", "styles.css", "app.js", "README.md"):
+            shutil.copy2(script_root / "dashboard" / asset, output.parent / asset)
     output.write_text(rendered, encoding="utf-8")
     print(f"projects={len(payload['projects'])} output={output}")
     return 0
