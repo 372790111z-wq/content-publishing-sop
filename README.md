@@ -48,6 +48,11 @@ python3 tools/build_dashboard.py
 
 打开 `dashboard/index.html` 即可看到完全虚构的 `quickstart-demo`。示例不包含真实账号、链接或个人内容。
 
+如需在本机查看真实项目，请把私人项目登记到被 Git 忽略的
+`.content-publishing/registry.json`，再运行同一条构建命令。工具会优先读取
+本机登记表，并把结果写入 `.content-publishing/dashboard/`；公开的
+`dashboard/data.js` 始终保留为脱敏示例，不会被真实文章、账号或链接覆盖。
+
 ### 方式二：安装统一命令
 
 ```bash

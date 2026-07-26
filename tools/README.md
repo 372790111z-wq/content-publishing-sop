@@ -35,7 +35,9 @@ python3 tools/content_publishing.py --help
 ## 保留的底层脚本
 
 - `capability_check.py`：检测本机能力，不安装、不登录；
-- `build_dashboard.py`：从注册表和项目真源重建 `dashboard/data.js`；
+- `build_dashboard.py`：公开仓库默认重建脱敏示例；存在本机
+  `.content-publishing/registry.json` 时，改为重建被 Git 忽略的私人看板，
+  避免真实文章、账号和链接进入公开 `dashboard/data.js`；
 - `release_digest.py`：计算发布内容集合 SHA-256；
 - `portability_check.py`：检查目录、路径、项目门禁和看板新鲜度；
 - `full_schema_check.py`：使用可选标准 `jsonschema` 包运行 Draft 2020-12 检查；
